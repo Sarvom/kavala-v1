@@ -2,18 +2,21 @@
 
 import { useState } from "react";
 import { type AppState } from "@/lib/app/state";
+import type { GoogleAccount } from "@/lib/app/useGoogleAccount";
 import { Mask, maskColorFor } from "./Mask";
+import GoogleButton from "./GoogleButton";
 
 interface Props {
   state: AppState;
   update: (fn: (s: AppState) => AppState) => void;
   notify: (message: string) => void;
   onReset: () => void;
+  google: GoogleAccount;
 }
 
 const REGULARS = ["Kind Lantern", "Brave Auto", "Rainy Mango"];
 
-export default function MeView({ state, update, notify, onReset }: Props) {
+export default function MeView({ state, update, notify, onReset, google }: Props) {
   const [confirmReset, setConfirmReset] = useState(false);
   const verified = state.level === "verified";
 
@@ -27,8 +30,40 @@ export default function MeView({ state, update, notify, onReset }: Props) {
       <div className="card center-card">
         <Mask color={state.maskColor} size={76} />
         <div className="mask-name">{state.maskName}</div>
-        <span className="chip">{verified ? "Verified" : "Masked"}</span>
+        <span className="chip">{state.account ? "Verified with Google" : verified ? "Verified" : "Masked"}</span>
       </div>
+
+      <section className="card">
+        <h2>Your profile</h2>
+        {state.account ? (
+          <>
+            <div className="row">
+              {state.account.avatarUrl && <img className="avatar" src={state.account.avatarUrl} alt="" referrerPolicy="no-referrer" />}
+              <div style={{ minWidth: 0 }}>
+                <strong>{state.account.name}</strong>
+                <p className="muted">{state.account.email}</p>
+              </div>
+            </div>
+            <p className="muted">
+              Signed in with Google. Neighbours see {state.maskName}; your name appears only to people you choose below.
+            </p>
+            <button
+              className="btn ghost small"
+              onClick={async () => {
+                await google.signOut();
+                notify("Signed out. You're masked again.");
+              }}
+            >
+              Sign out
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="muted">Create a profile with your Google account. It counts as verified and keeps your mask.</p>
+            <GoogleButton google={google} label="Create profile with Google" />
+          </>
+        )}
+      </section>
       <div className="stats">
         <div className="stat"><b>{state.thanks}</b><span>Thanks</span></div>
         <div className="stat"><b>{state.streak}</b><span>Day streak</span></div>
@@ -50,7 +85,7 @@ export default function MeView({ state, update, notify, onReset }: Props) {
             <div>
               <h3>Verified</h3>
               <p>Message neighbours with mutual consent, ask 10 a day, and reveal your name to people you choose.</p>
-              {!verified && (
+              {!verified && !google.available && (
                 <button
                   className="btn small"
                   onClick={() => {

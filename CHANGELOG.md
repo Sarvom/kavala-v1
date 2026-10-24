@@ -14,6 +14,13 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-25T01:43:07+05:30 — 3D neighbourhood, night theme, Google sign-in, Next.js 16
+
+- Changed: added `src/lib/geo/scene.ts` (H3 cells to local 3D geometry) and `src/components/app/Neighbourhood3D.tsx` (three.js scene on Today, Neighbourhood and Join); restyled the app as a friendly neighbourhood at night with comic-panel depth and a web motif (`globals.css`, `layout.tsx` fonts); added optional Google sign-in through Supabase Auth (`src/lib/supabase/browser.ts`, `src/lib/app/useGoogleAccount.ts`, `GoogleButton.tsx`, `linkAccount` in `state.ts`, Join and Me screens); upgraded Next.js 14.2 to 16.4.3 and React 18 to 19.2 (`package.json`, `tsconfig.json`, two type fixes in `KavalaApp.tsx`); README, SPEC and `.env.example` updated.
+- Why: a more distinctive, depth-rich interface; a way to create a profile with Google; and Next.js 14 had open security advisories, including critical ones, that are fixed in 16.
+- Validation: `npm test` passed (57 tests in 6 files, including new tests for scene geometry and account linking); `npm run typecheck` passed; `npm run build` passed on Next.js 16; `npm audit --omit=dev` reported 0 vulnerabilities; local server returned 200 for all pages, the beacon API refused coordinates and a handshake verified.
+- Limitations: Google sign-in is untested end to end here because it needs the Supabase and Google OAuth setup in the README; the profile is kept in the browser and Supabase Auth, not yet in the `users` table; the 3D view was not checked visually in this environment and falls back to a message when WebGL is unavailable.
+
 ## 2026-10-25T01:27:59+05:30 — App experience with a sample daily
 
 - Changed: `/` is now the app experience (`src/components/app/`: KavalaApp, JoinView, TodayView, AskView, HoodView, MeView, Mask, SpotMap); the engine overview moved to `/engine`; added `src/lib/app/state.ts` (app state, sample content, streaks, demo timing) and `src/lib/daily/spotPlace.ts` (OpenStreetMap places via Overpass, deterministic daily pick); app styles in `globals.css`; README and SPEC updated.

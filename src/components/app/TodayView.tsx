@@ -18,6 +18,7 @@ import {
 import { Mask, maskColorFor } from "./Mask";
 
 const SpotMap = dynamic(() => import("./SpotMap"), { ssr: false });
+const Neighbourhood3D = dynamic(() => import("./Neighbourhood3D"), { ssr: false });
 
 type Stage = "home" | "spot" | "help" | "step" | "result";
 
@@ -26,6 +27,8 @@ interface Props {
   update: (fn: (s: AppState) => AppState) => void;
   notify: (message: string) => void;
   goToAsk: () => void;
+  goToMe?: () => void;
+  googleAvailable?: boolean;
 }
 
 const SQUARE_EMOJI = { green: "🟩", yellow: "🟨", orange: "🟧", grey: "⬜" } as const;
@@ -51,7 +54,7 @@ function played(state: AppState): number {
   return SAMPLE_PLAYED_TODAY + (state.daily.done ? 1 : 0);
 }
 
-export default function TodayView({ state, update, notify, goToAsk }: Props) {
+export default function TodayView({ state, update, notify, goToAsk, goToMe, googleAvailable }: Props) {
   const [stage, setStage] = useState<Stage>("home");
   const d = state.daily;
 
@@ -78,8 +81,17 @@ export default function TodayView({ state, update, notify, goToAsk }: Props) {
   return (
     <>
       <p className="eyebrow">
-        {greeting()}, {state.maskName}
+        {greeting()}, {state.maskName} · your friendly neighbourhood
       </p>
+      {state.hood && (
+        <Neighbourhood3D
+          hoodCell={state.hood.cells[0]}
+          homeCell={state.homeCell}
+          height={210}
+          threads={Math.min(8, 2 + state.thanks)}
+          label="Your web: amber threads link your block to neighbours. Help more, and it grows."
+        />
+      )}
       <section className="daily-card" aria-label="Today's Kavala Daily">
         <span className="daily-meta">KAVALA DAILY · {prettyDate(d.key)}</span>
         <div className="daily-num">#{dailyNumber(d.key)}</div>
@@ -125,6 +137,13 @@ export default function TodayView({ state, update, notify, goToAsk }: Props) {
         ))}
         <button className="btn ghost" onClick={goToAsk}>Ask your neighbours</button>
       </section>
+      {!state.account && googleAvailable && goToMe && (
+        <section className="card">
+          <h2>Create your profile</h2>
+          <p className="muted">Connect Google to keep your profile and count as verified. Neighbours still see only your mask.</p>
+          <button className="btn ghost" onClick={goToMe}>Set up my profile</button>
+        </section>
+      )}
       <p className="muted">* Neighbours, questions and counts marked sample are demo content until accounts arrive.</p>
     </>
   );

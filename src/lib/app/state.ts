@@ -1,4 +1,5 @@
 import type { SpotPlace } from "../daily/spotPlace";
+import type { GoogleProfile } from "./useGoogleAccount";
 import type { Square } from "../daily/score";
 
 /**
@@ -70,6 +71,8 @@ export interface AppState {
   daily: DailyState;
   questions: Question[];
   revealedTo: string[];
+  /** Profile linked by signing in with Google. Others still see the mask. */
+  account?: GoogleProfile;
 }
 
 export const MASK_COLORS = ["#1d6a4e", "#c58a12", "#3d6fa8", "#b4533a", "#7a5ba6", "#2e8c8c"];
@@ -304,6 +307,19 @@ export function advance(state: AppState, now: number): { state: AppState; events
 
   if (!changed) return { state, events };
   return { state: { ...state, questions: finalQuestions, thanks, daily }, events };
+}
+
+/**
+ * Links or unlinks a Google profile. Signing in counts as verified identity;
+ * the user stays masked to everyone they haven't chosen to reveal to.
+ */
+export function linkAccount(state: AppState, profile: GoogleProfile | null): AppState {
+  if (!profile) {
+    if (!state.account) return state;
+    return { ...state, account: undefined, level: "masked", revealedTo: [] };
+  }
+  if (state.account?.userId === profile.userId && state.level === "verified") return state;
+  return { ...state, account: profile, level: "verified" };
 }
 
 export const STORAGE_KEY = "kavala-app-v1";

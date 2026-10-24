@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { dailyKey } from "@/lib/daily/score";
-import { advance, clearState, initialState, loadState, rollDay, saveState, type AppState } from "@/lib/app/state";
+import { advance, clearState, initialState, linkAccount, loadState, rollDay, saveState, type AppState } from "@/lib/app/state";
+import { useGoogleAccount } from "@/lib/app/useGoogleAccount";
 import JoinView from "./JoinView";
 import TodayView from "./TodayView";
 import AskView from "./AskView";
@@ -11,7 +12,7 @@ import MeView from "./MeView";
 
 type Tab = "today" | "ask" | "hood" | "me";
 
-const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
+const TABS: { id: Tab; label: string; icon: React.JSX.Element }[] = [
   { id: "today", label: "Today", icon: <path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z" /> },
   { id: "ask", label: "Ask", icon: <><path d="M5 5h14v10H9l-4 4z" /><path d="M12 8.5v2.5" /><path d="M12 13h.01" /></> },
   { id: "hood", label: "Neighbourhood", icon: <><polygon points="12,3 20,7.5 20,16.5 12,21 4,16.5 4,7.5" /><circle cx="12" cy="12" r="2.5" /></> },
@@ -27,7 +28,8 @@ export default function KavalaApp() {
   const [tab, setTab] = useState<Tab>("today");
   const [toast, setToast] = useState<string | null>(null);
   const stateRef = useRef<AppState | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout>>();
+  const google = useGoogleAccount();
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const notify = useCallback((message: string) => {
     setToast(message);
@@ -61,6 +63,13 @@ export default function KavalaApp() {
     return () => clearInterval(timer);
   }, [notify]);
 
+  // Link or unlink the Google profile once both the saved state and the session are known.
+  const loaded = state !== null;
+  useEffect(() => {
+    if (!loaded || !google.available || !google.ready) return;
+    setState((s) => (s ? linkAccount(s, google.profile) : s));
+  }, [loaded, google.available, google.ready, google.profile]);
+
   function reset() {
     clearState();
     setTab("today");
@@ -78,18 +87,20 @@ export default function KavalaApp() {
   return (
     <div className="app">
       {!state.joined ? (
-        <JoinView state={state} update={update} notify={notify} />
+        <JoinView state={state} update={update} notify={notify} google={google} />
       ) : (
         <>
           <div className="app-bar">
-            <span className="chip">Your neighbourhood</span>
+            <span className="chip">{state.account ? `Signed in · ${state.maskName}` : `Masked · ${state.maskName}`}</span>
             <span className="chip gold">{state.thanks} Thanks</span>
           </div>
           <div className="app-body">
-            {tab === "today" && <TodayView state={state} update={update} notify={notify} goToAsk={() => setTab("ask")} />}
+            {tab === "today" && (
+              <TodayView state={state} update={update} notify={notify} goToAsk={() => setTab("ask")} goToMe={() => setTab("me")} googleAvailable={google.available} />
+            )}
             {tab === "ask" && <AskView state={state} update={update} notify={notify} />}
             {tab === "hood" && <HoodView state={state} />}
-            {tab === "me" && <MeView state={state} update={update} notify={notify} onReset={reset} />}
+            {tab === "me" && <MeView state={state} update={update} notify={notify} onReset={reset} google={google} />}
           </div>
           <nav className="tabs" aria-label="App sections">
             {TABS.map((t) => (

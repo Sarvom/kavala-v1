@@ -73,13 +73,19 @@ Spot places (implemented: `src/lib/daily/spotPlace.ts`): named public places (ca
 
 Thanks: +1 to an answer's author when the asker marks it useful. Game points never add to Thanks.
 
+## Look and identity
+
+- **Theme:** a friendly neighbourhood at night: navy streets, amber streetlights, teal for neighbours, comic-panel depth and a generic web motif for the threads between people. No Spider-Man names, logos, suits or characters: the nod stays in the tagline and the mask.
+- **3D neighbourhood** (`src/lib/geo/scene.ts`, `Neighbourhood3D.tsx`): the neighbourhood's H3 cell split two levels finer into 49 blocks, extruded by activity; the user's block glows amber; web threads arc to neighbours (more with more Thanks); touching neighbourhoods drawn faintly. Shown only on the user's own screen.
+- **Google sign-in** (`useGoogleAccount.ts`): optional, through Supabase Auth (PKCE). Counts as verified identity; the mask stays the public face and the real name is revealed only by choice.
+
 ## Data model
 
 See `supabase/migrations/0001_init.sql`. No table stores a person's coordinates. Row-level security is on for every table with no public policies; the server uses the service-role key.
 
 ## Stack
 
-Next.js 14 (App Router) and TypeScript, plain CSS with theme tokens, Supabase (Postgres), h3-js, Leaflet with OpenStreetMap tiles (attribution always shown), Vitest. Hosting on Vercel.
+Next.js 16 (App Router) with React 19 and TypeScript, plain CSS with theme tokens, Supabase (Postgres, Auth with Google sign-in), h3-js, three.js, Leaflet with OpenStreetMap tiles (attribution always shown), Vitest. Hosting on Vercel.
 
 ## Build status
 
@@ -90,6 +96,8 @@ Next.js 14 (App Router) and TypeScript, plain CSS with theme tokens, Supabase (P
 | Handshake signing and verification, APIs, debug page | Done in base version |
 | Daily scoring, day boundary, check-in rule | Done |
 | App experience at `/`: join, Kavala Daily (Spot on real OpenStreetMap places, Help, Small step with verified check-in), result card, Ask with widening, Thanks, neighbourhood map, trust ladder | Done with sample neighbours; progress saved in the browser |
-| Database connection, accounts, join flow | Next (Phase 2) |
+| Google sign-in (Supabase Auth) | Done; needs Supabase and Google OAuth setup |
+| 3D neighbourhood and night theme | Done |
+| Database connection, saved profiles, join flow on the server | Next (Phase 2) |
 | Real QR scanning, vouches table, live room | Next (Phase 4) |
 | Daily, Ask and Thanks saved in the database with real neighbours | Next (Phase 5) |

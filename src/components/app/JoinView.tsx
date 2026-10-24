@@ -1,20 +1,26 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { latLngToCell } from "h3-js";
 import { useLocation } from "@/lib/geo/useLocation";
 import { assignNeighbourhood } from "@/lib/hood/assign";
 import { KOCHI_CENTRE } from "@/lib/hood/synthetic";
 import { MASK_COLORS, randomMaskName, type AppState } from "@/lib/app/state";
+import type { GoogleAccount } from "@/lib/app/useGoogleAccount";
 import { Mask } from "./Mask";
+import GoogleButton from "./GoogleButton";
+
+const Neighbourhood3D = dynamic(() => import("./Neighbourhood3D"), { ssr: false });
 
 interface Props {
   state: AppState;
   update: (fn: (s: AppState) => AppState) => void;
   notify: (message: string) => void;
+  google: GoogleAccount;
 }
 
-export default function JoinView({ state, update, notify }: Props) {
+export default function JoinView({ state, update, notify, google }: Props) {
   const loc = useLocation();
   const [home, setHome] = useState<{ cell: string; fromGps: boolean } | null>(null);
 
@@ -56,11 +62,15 @@ export default function JoinView({ state, update, notify }: Props) {
       <div className="card">
         <p className="eyebrow">Step 1 · Find your neighbourhood</p>
         {home ? (
+          <>
+          <Neighbourhood3D
+            hoodCell={assignNeighbourhood(home.cell, []).hood.cells[0]}
+            homeCell={home.cell}
+            height={220}
+            threads={0}
+            label="Your neighbourhood. Your block glows amber; drag to turn it."
+          />
           <div className="row">
-            <svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
-              <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="var(--surface-2)" stroke="var(--leaf)" strokeWidth="3" />
-              <circle cx="32" cy="32" r="5" fill="var(--turmeric)" />
-            </svg>
             <div style={{ minWidth: 0 }}>
               <strong>{home.fromGps ? "Found from your phone's location" : "Using a demo location in Kochi"}</strong>
               <p className="muted">
@@ -69,6 +79,7 @@ export default function JoinView({ state, update, notify }: Props) {
               </p>
             </div>
           </div>
+          </>
         ) : (
           <>
             <p className="muted">
@@ -106,6 +117,27 @@ export default function JoinView({ state, update, notify }: Props) {
           Shuffle name
         </button>
         <p className="muted">No phone number needed to start. Neighbours see only your mask until you choose to reveal more.</p>
+      </div>
+
+      <div className="card">
+        <p className="eyebrow">Step 3 · Create your profile (optional)</p>
+        {state.account ? (
+          <div className="row">
+            {state.account.avatarUrl && <img className="avatar" src={state.account.avatarUrl} alt="" referrerPolicy="no-referrer" />}
+            <div style={{ minWidth: 0 }}>
+              <strong>Signed in as {state.account.name}</strong>
+              <p className="muted">Your name stays hidden. Neighbours see {state.maskName} unless you choose to reveal it.</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="muted">
+              Connect your Google account to keep your profile safe and count as verified. Your Google name is never shown to
+              neighbours unless you choose to reveal it.
+            </p>
+            <GoogleButton google={google} />
+          </>
+        )}
       </div>
 
       <button className="btn wide" onClick={join} disabled={!home}>

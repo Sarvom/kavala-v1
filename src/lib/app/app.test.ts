@@ -131,3 +131,26 @@ describe("spot places", () => {
     expect(overpassQuery(9.98, 76.3, 1800)).toContain("around:1800,9.98000,76.30000");
   });
 });
+
+describe("linkAccount", () => {
+  const profile = { provider: "google" as const, userId: "u1", name: "Govind S", email: "g@example.com" };
+
+  it("links a Google profile and marks the user verified, keeping the mask", async () => {
+    const { linkAccount } = await import("./state");
+    const s = initialState("2026-10-25", NOW);
+    const linked = linkAccount(s, profile);
+    expect(linked.level).toBe("verified");
+    expect(linked.account?.email).toBe("g@example.com");
+    expect(linked.maskName).toBe(s.maskName);
+    expect(linkAccount(linked, profile)).toBe(linked);
+  });
+
+  it("unlinks on sign-out and hides the real name again", async () => {
+    const { linkAccount } = await import("./state");
+    const linked = { ...linkAccount(initialState("2026-10-25", NOW), profile), revealedTo: ["Kind Lantern"] };
+    const out = linkAccount(linked, null);
+    expect(out.account).toBeUndefined();
+    expect(out.level).toBe("masked");
+    expect(out.revealedTo).toEqual([]);
+  });
+});

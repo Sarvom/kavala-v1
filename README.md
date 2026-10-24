@@ -86,18 +86,31 @@ The data model is designed from day one to support these later features.
 - **Short description:** A digital daily game that turns nearby strangers into a small, trusted neighbourhood, so people who move to a new place find help, friends and belonging without giving up their privacy.
 - **Team:** Govindaraman S (@Sarvom)
 - **Working demo:** TODO: Vercel link once deployed (Phase 1 of the build guide)
-- **Technology stack:** Next.js 14 (App Router) and TypeScript, Supabase (Postgres), h3-js, Leaflet with OpenStreetMap tiles, Vitest. Full specification in [docs/SPEC.md](docs/SPEC.md).
+- **Technology stack:** Next.js 16 (App Router) with React 19 and TypeScript, Supabase (Postgres and Auth with Google sign-in), h3-js, three.js for the 3D neighbourhood, Leaflet with OpenStreetMap tiles, Vitest. Full specification in [docs/SPEC.md](docs/SPEC.md).
 
 ### Run the project
 
 1. **Prerequisites:** Node.js 20 or newer (`node -v`) and Git.
 2. **Install:** `npm install`
-3. **Environment:** copy `.env.example` to `.env.local`. Everything runs without values: the beacon API then says nothing was stored, and handshakes use a temporary local secret. Set `HANDSHAKE_SECRET` (32+ characters) before deploying, and the Supabase values once the database is set up.
+3. **Environment:** copy `.env.example` to `.env.local`. Everything runs without values: the beacon API then says nothing was stored, handshakes use a temporary local secret, and the Google button explains that sign-in isn't set up yet. Set `HANDSHAKE_SECRET` (32+ characters) before deploying, and the two `NEXT_PUBLIC_SUPABASE_*` values to turn on Google sign-in.
 4. **Start:** `npm run dev`, then open http://localhost:3000
 5. **Checks:** `npm test` (unit tests), `npm run typecheck`, `npm run build`
 6. **Synthetic neighbourhoods:** `npm run synthetic -- 3000` prints how 3,000 fake residents around Kochi split into neighbourhoods.
 
 Phones only share GPS with pages served over HTTPS (or localhost), so test the location page on a phone through the deployed Vercel link.
+
+### Google sign-in setup
+
+Google sign-in runs through Supabase Auth. Menu names may differ slightly between dashboard versions.
+
+1. **Supabase:** open Authentication, then the Google provider, and enable it. Copy the callback URL it shows (`https://<project-ref>.supabase.co/auth/v1/callback`).
+2. **Google Cloud Console:** create a project and set up the OAuth consent screen (External, app name Kavala, your support email; add yourself as a test user while the app is in testing). Then create an OAuth client ID of type Web application with:
+   - Authorized JavaScript origins: your Vercel URL and `http://localhost:3000`
+   - Authorized redirect URI: the Supabase callback URL from step 1
+3. **Supabase:** paste the Google client ID and secret into the Google provider and save. Under URL configuration, set the Site URL to your Vercel URL and add your Vercel URL and `http://localhost:3000` as redirect URLs.
+4. **Vercel:** add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, then redeploy.
+
+Signing in links a Google profile to the mask. Neighbours still see the mask name; the Google name is shown only to people the user chooses to reveal it to. In this version the profile is kept in the browser and in Supabase Auth; saving profiles to the `users` table comes with the database phase.
 
 ### Pages
 
@@ -111,8 +124,8 @@ Phones only share GPS with pages served over HTTPS (or localhost), so test the l
 
 ### Current status
 
-- **Working features:** app experience at `/` (join, Kavala Daily with real OpenStreetMap places, verified check-in, result card and WhatsApp share, Ask with widening, Thanks, neighbourhood map, trust ladder, reveal controls); location engine with accuracy gate, speed check, smoothing and adaptive resolution; beacon API that refuses coordinates; neighbourhood rebalancing with split and pooling; neighbourhood assignment; handshake signing and verification with APIs; daily scoring, 6 AM day boundary and check-in rule; database schema with row-level security.
+- **Working features:** night-time comic look with a 3D neighbourhood (three.js: the neighbourhood's H3 cell split into 49 hexagonal blocks, your block lit, web threads to neighbours); optional Google sign-in through Supabase Auth; app experience at `/` (join, Kavala Daily with real OpenStreetMap places, verified check-in, result card and WhatsApp share, Ask with widening, Thanks, neighbourhood map, trust ladder, reveal controls); location engine with accuracy gate, speed check, smoothing and adaptive resolution; beacon API that refuses coordinates; neighbourhood rebalancing with split and pooling; neighbourhood assignment; handshake signing and verification with APIs; daily scoring, 6 AM day boundary and check-in rule; database schema with row-level security.
 - **Known limitations:** no accounts or saved data on a server yet (the database is not connected), so the app keeps progress in the browser and uses clearly labelled sample neighbours, questions and counts; Spot places come from the public Overpass API, which can be slow or unavailable (Spot then offers retry or skip); handshake nonces are kept in memory, so they reset on restart and are not shared between server instances; the handshake page simulates phone positions; the daily game, Ask and Thanks screens are not built yet; a pooled neighbourhood can exceed 150 by up to 30 people.
-- **Libraries, APIs and data:** [Next.js](https://nextjs.org), [h3-js](https://github.com/uber/h3-js) (Uber H3, Apache 2.0), [Leaflet](https://leafletjs.com) (BSD 2-Clause), map tiles and data [© OpenStreetMap contributors](https://www.openstreetmap.org/copyright) (ODbL), Spot places from the [Overpass API](https://overpass-api.de), [Supabase JS](https://github.com/supabase/supabase-js), [Vitest](https://vitest.dev). Synthetic residents are generated locally and are not real people.
+- **Libraries, APIs and data:** [Next.js](https://nextjs.org), [h3-js](https://github.com/uber/h3-js) (Uber H3, Apache 2.0), [Leaflet](https://leafletjs.com) (BSD 2-Clause), map tiles and data [© OpenStreetMap contributors](https://www.openstreetmap.org/copyright) (ODbL), Spot places from the [Overpass API](https://overpass-api.de), [Supabase JS](https://github.com/supabase/supabase-js) (Auth with Google), [three.js](https://threejs.org) (MIT), the [Bangers](https://fonts.google.com/specimen/Bangers) and [Atkinson Hyperlegible](https://fonts.google.com/specimen/Atkinson+Hyperlegible) fonts (SIL Open Font License), [Vitest](https://vitest.dev). Synthetic residents are generated locally and are not real people.
 
 See [AI_USAGE.md](AI_USAGE.md) for AI assistance and [CHANGELOG.md](CHANGELOG.md) for the development record.

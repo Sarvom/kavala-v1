@@ -9,6 +9,7 @@ import type { MapShape } from "@/components/HexMap";
 import { Mask, maskColorFor } from "./Mask";
 
 const HexMap = dynamic(() => import("@/components/HexMap"), { ssr: false });
+const Neighbourhood3D = dynamic(() => import("./Neighbourhood3D"), { ssr: false });
 
 const AREA: Record<number, string> = { 6: "about 36 sq km", 7: "about 5 sq km", 8: "about 0.7 sq km", 9: "about 0.1 sq km" };
 
@@ -41,7 +42,14 @@ export default function HoodView({ state }: { state: AppState }) {
           are spread out, so it stays between 30 and 150 people.
         </p>
       </div>
-      <HexMap center={center} zoom={13} shapes={shapes} fit height={320} />
+      <Neighbourhood3D
+        hoodCell={hood.cells[0]}
+        homeCell={state.homeCell}
+        height={300}
+        threads={Math.min(8, 2 + state.thanks)}
+        label="49 blocks, each an H3 hexagon. Taller blocks are busier; your block glows amber."
+      />
+      <HexMap center={center} zoom={13} shapes={shapes} fit height={280} />
       <p className="muted">Only the outline is shown, never anyone&apos;s home. Maps &copy; OpenStreetMap contributors.</p>
       <div className="stats">
         <div className="stat"><b>{SAMPLE_MEMBERS}</b><span>Neighbours*</span></div>
