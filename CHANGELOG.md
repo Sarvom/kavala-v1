@@ -18,7 +18,7 @@ Record each meaningful project change during the event, newest first. Update thi
 
 - Changed: bottom tab order is now Play, Map, Ask, Me (was Play, Ask, Map, Me) in `src/components/app/KavalaApp.tsx`.
 - Why: requested by the team; Map sits next to Play.
-- Validation: `npm run typecheck` passed; no behaviour change besides tab order.
+- Validation: `npm run typecheck` could not be run meaningfully here (dependencies are not installed in this container, so it reports missing modules); the change only swaps two array entries and the `Tab` union order.
 - Limitations: not checked on a real phone.
 
 ## 2026-10-25T02:35:29+05:30 — Demo polish for phones
