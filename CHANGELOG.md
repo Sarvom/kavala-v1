@@ -14,6 +14,14 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-25T02:12:30+05:30 — Game experience, original masks, Spot fix
+
+- Changed: `/` now plays like a daily game: a Kerala night splash (`Splash.tsx`), a choice to create a profile with Google or go under a mask (`Onboarding.tsx`), and a games hub (`GameHub.tsx`, `Games.tsx`, `GameKit.tsx`) with Spot, Good Turn and Quest, each with a clock, a comic win burst and a share card. Five original masks (`Mask.tsx`) and Marvel-inspired hero names with Kerala surnames (`state.ts`); sample neighbours renamed to match. Spot now has 3 tries with warmth, distance and compass hints (`score.ts`). Removed the 3D neighbourhood (`Neighbourhood3D.tsx`, `src/lib/geo/scene.ts`, three.js) and the old Today and Join screens. Engine and debug pages moved under a `(site)` route group with their own header; URLs are unchanged.
+- Spot fix: places are now fetched by a server route, `/api/places?cell=` (`src/app/api/places/route.ts`, `src/lib/daily/fetchPlaces.ts`), which tries three Overpass servers with timeouts, widens the radius once and caches for a day. If that fails, the browser asks Overpass directly with the neighbourhood centre. Errors now show each server's reason.
+- Why: the app should feel like a game, the 3D view didn't help people understand their neighbourhood, and Spot failed when the single Overpass server didn't answer.
+- Validation: `npm test` passed (59 tests in 5 files, including new tests for Spot hints, the Overpass fallback and browser requests, and daily completion); `npm run typecheck` and `npm run build` passed; phone-size screenshots of the splash, onboarding, hub and all three games checked locally.
+- Limitations: this build environment can't reach Overpass, so a live Spot round was checked only up to the error screen here and needs checking on the deployment; sample neighbours and counts are demo content.
+
 ## 2026-10-25T01:43:07+05:30 — 3D neighbourhood, night theme, Google sign-in, Next.js 16
 
 - Changed: added `src/lib/geo/scene.ts` (H3 cells to local 3D geometry) and `src/components/app/Neighbourhood3D.tsx` (three.js scene on Today, Neighbourhood and Join); restyled the app as a friendly neighbourhood at night with comic-panel depth and a web motif (`globals.css`, `layout.tsx` fonts); added optional Google sign-in through Supabase Auth (`src/lib/supabase/browser.ts`, `src/lib/app/useGoogleAccount.ts`, `GoogleButton.tsx`, `linkAccount` in `state.ts`, Join and Me screens); upgraded Next.js 14.2 to 16.4.3 and React 18 to 19.2 (`package.json`, `tsconfig.json`, two type fixes in `KavalaApp.tsx`); README, SPEC and `.env.example` updated.

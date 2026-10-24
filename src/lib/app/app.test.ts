@@ -147,10 +147,24 @@ describe("linkAccount", () => {
 
   it("unlinks on sign-out and hides the real name again", async () => {
     const { linkAccount } = await import("./state");
-    const linked = { ...linkAccount(initialState("2026-10-25", NOW), profile), revealedTo: ["Kind Lantern"] };
+    const linked = { ...linkAccount(initialState("2026-10-25", NOW), profile), revealedTo: ["Carol Chacko"] };
     const out = linkAccount(linked, null);
     expect(out.account).toBeUndefined();
     expect(out.level).toBe("masked");
     expect(out.revealedTo).toEqual([]);
+  });
+});
+
+describe("completeDaily", () => {
+  it("completes only when all three games are finished, and counts the streak once", async () => {
+    const { completeDaily } = await import("./state");
+    const base = initialState("2026-10-25", NOW);
+    const partial = { ...base, daily: { ...base.daily, help: "marked" as const, step: "done" as const } };
+    expect(completeDaily(partial)).toBe(partial);
+    const full = { ...partial, daily: { ...partial.daily, spot: "skipped" as const } };
+    const done = completeDaily(full);
+    expect(done.daily.done).toBe(true);
+    expect(done.streak).toBe(1);
+    expect(completeDaily(done)).toBe(done);
   });
 });

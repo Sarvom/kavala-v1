@@ -50,15 +50,16 @@ Honest limit: a browser cannot reliably detect fake-location apps. The speed che
 - Phone B sends the code plus its own cell. It passes only if the signature is genuine, the code is under 30 seconds old, the nonce is unused, the users differ, and the cells are the same or touching (compared at the coarser resolution).
 - Base version keeps used nonces in memory; Phase 4 stores them in the `vouches` table (unique nonce).
 
-## Kavala Daily (scoring implemented: `src/lib/daily`; screens not yet)
+## Kavala Daily (implemented: `src/lib/daily`, `src/components/app/Games.tsx`)
 
 - One ritual per neighbourhood per day; the day starts at 6:00 AM IST (`dailyKey`).
-- **Spot:** guess a local place on the map. Points `round(1000 * exp(-d / 500))`, d in metres. Squares: green to 100 m, yellow to 500 m, orange to 2 km, grey beyond.
-- **Help:** answer one open neighbour question or mark the most useful answer.
-- **Small step:** a small real-world action. A check-in at a place is accepted only when the phone's cell is the place's cell or touches it (`verifyCheckin`).
+- Played like a daily puzzle: a hub with three game tiles, a clock in each game, a comic burst on a win, and a share card with coloured squares once all three are done.
+- **Spot:** find a named local place on the map in up to 3 tries. Within 120 m solves it; otherwise a hint gives warmth (Hot to 300 m, Warm to 700 m, Cold to 1.5 km, then Freezing), the distance and a compass direction. Score uses the closest try. Points `round(1000 * exp(-d / 500))`, d in metres. Squares: green to 100 m, yellow to 500 m, orange to 2 km, grey beyond.
+- **Good Turn:** a neighbour's question in a speech bubble; mark the answer you'd trust or write a better one.
+- **Quest:** a small real-world action (say hi to the newest neighbour, or visit today's Spot place). A check-in at a place is accepted only when the phone's cell is the place's cell or touches it (`verifyCheckin`).
 - Then a result card and "See you tomorrow". Nothing more to scroll.
 
-Spot places (implemented: `src/lib/daily/spotPlace.ts`): named public places (cafes, libraries, places of worship, bakeries and similar) fetched from OpenStreetMap through the Overpass API around the neighbourhood's centre, then picked by a hash of the neighbourhood ID and daily key, so the whole neighbourhood gets the same place. The Spot map is capped at zoom 16 so place names aren't printed on the tiles.
+Spot places (implemented: `src/lib/daily/spotPlace.ts`): named public places (cafes, libraries, places of worship, bakeries and similar) fetched from OpenStreetMap through the Overpass API around the neighbourhood's centre, then picked by a hash of the neighbourhood ID and daily key, so the whole neighbourhood gets the same place. Places are fetched by the server route `/api/places?cell=<H3 cell>` (`src/app/api/places/route.ts`, `src/lib/daily/fetchPlaces.ts`), which takes only the neighbourhood cell, tries three public Overpass servers with a 12-second timeout each, doubles the radius once if nothing is found, and is cached for a day at the edge. If the server route fails, the browser asks Overpass directly with the neighbourhood centre (never the person's location). Every failure is shown with the reason, with retry and skip. The Spot map is capped at zoom 16 so place names aren't printed on the tiles.
 
 ## Trust levels and Thanks
 
@@ -76,7 +77,9 @@ Thanks: +1 to an answer's author when the asker marks it useful. Game points nev
 ## Look and identity
 
 - **Theme:** a friendly neighbourhood at night: navy streets, amber streetlights, teal for neighbours, comic-panel depth and a generic web motif for the threads between people. No Spider-Man names, logos, suits or characters: the nod stays in the tagline and the mask.
-- **3D neighbourhood** (`src/lib/geo/scene.ts`, `Neighbourhood3D.tsx`): the neighbourhood's H3 cell split two levels finer into 49 blocks, extruded by activity; the user's block glows amber; web threads arc to neighbours (more with more Thanks); touching neighbourhoods drawn faintly. Shown only on the user's own screen.
+- **Splash** (`Splash.tsx`): an original night scene of a Kerala junction: backwaters and a houseboat, coconut palms, a tea shop (ചായക്കട), a green KAVALA road sign, festival lights, and an original masked hero on the roof. Then the Kavala logo and "Enter the kavala".
+- **Profile or mask** (`Onboarding.tsx`): create a profile with Google, or go under a mask. Masks are original designs: Night watch, Web weaver, Kathakali, Pulikali tiger and Night owl (`Mask.tsx`). Hero names are Marvel-inspired with Kerala surnames (Peter Bhaskaran, Miles Mohan, Gwen George and others), with "Roll a name".
+- **Neighbourhood map:** a flat OpenStreetMap map of the neighbourhood's hexagons. The earlier 3D view was removed.
 - **Google sign-in** (`useGoogleAccount.ts`): optional, through Supabase Auth (PKCE). Counts as verified identity; the mask stays the public face and the real name is revealed only by choice.
 
 ## Data model
@@ -85,7 +88,7 @@ See `supabase/migrations/0001_init.sql`. No table stores a person's coordinates.
 
 ## Stack
 
-Next.js 16 (App Router) with React 19 and TypeScript, plain CSS with theme tokens, Supabase (Postgres, Auth with Google sign-in), h3-js, three.js, Leaflet with OpenStreetMap tiles (attribution always shown), Vitest. Hosting on Vercel.
+Next.js 16 (App Router) with React 19 and TypeScript, plain CSS with theme tokens, Supabase (Postgres, Auth with Google sign-in), h3-js, Leaflet with OpenStreetMap tiles (attribution always shown), Vitest. Hosting on Vercel.
 
 ## Build status
 
@@ -97,7 +100,8 @@ Next.js 16 (App Router) with React 19 and TypeScript, plain CSS with theme token
 | Daily scoring, day boundary, check-in rule | Done |
 | App experience at `/`: join, Kavala Daily (Spot on real OpenStreetMap places, Help, Small step with verified check-in), result card, Ask with widening, Thanks, neighbourhood map, trust ladder | Done with sample neighbours; progress saved in the browser |
 | Google sign-in (Supabase Auth) | Done; needs Supabase and Google OAuth setup |
-| 3D neighbourhood and night theme | Done |
+| Game experience: splash, profile or mask, games hub with Spot, Good Turn and Quest | Done |
+| Night theme and neighbourhood map | Done (3D view removed) |
 | Database connection, saved profiles, join flow on the server | Next (Phase 2) |
 | Real QR scanning, vouches table, live room | Next (Phase 4) |
 | Daily, Ask and Thanks saved in the database with real neighbours | Next (Phase 5) |

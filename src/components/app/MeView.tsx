@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { type AppState } from "@/lib/app/state";
+import { MASK_STYLES, maskStyleOf, randomMaskName, type AppState } from "@/lib/app/state";
 import type { GoogleAccount } from "@/lib/app/useGoogleAccount";
-import { Mask, maskColorFor } from "./Mask";
+import { Mask, NeighbourMask } from "./Mask";
 import GoogleButton from "./GoogleButton";
 
 interface Props {
@@ -14,7 +14,7 @@ interface Props {
   google: GoogleAccount;
 }
 
-const REGULARS = ["Kind Lantern", "Brave Auto", "Rainy Mango"];
+const REGULARS = ["Carol Chacko", "Tony Thomas", "Wanda Warrier"];
 
 export default function MeView({ state, update, notify, onReset, google }: Props) {
   const [confirmReset, setConfirmReset] = useState(false);
@@ -28,8 +28,22 @@ export default function MeView({ state, update, notify, onReset, google }: Props
   return (
     <>
       <div className="card center-card">
-        <Mask color={state.maskColor} size={76} />
+        <Mask color={state.maskColor} style={maskStyleOf(state)} size={96} />
         <div className="mask-name">{state.maskName}</div>
+        <div className="row" style={{ justifyContent: "center" }}>
+          {MASK_STYLES.map((m) => (
+            <button
+              key={m.id}
+              className={`mask-choice ${maskStyleOf(state) === m.id ? "on" : ""}`}
+              aria-label={m.label}
+              aria-pressed={maskStyleOf(state) === m.id}
+              onClick={() => update((s) => ({ ...s, maskStyle: m.id }))}
+            >
+              <Mask color={state.maskColor} style={m.id} size={34} />
+            </button>
+          ))}
+        </div>
+        <button className="dice" onClick={() => update((s) => ({ ...s, maskName: randomMaskName(Math.random, s.maskName) }))}>Roll a new name</button>
         <span className="chip">{state.account ? "Verified with Google" : verified ? "Verified" : "Masked"}</span>
       </div>
 
@@ -130,7 +144,7 @@ export default function MeView({ state, update, notify, onReset, google }: Props
                   checked={state.revealedTo.includes(n)}
                   onChange={(e) => toggleReveal(n, e.target.checked)}
                 />
-                <Mask color={maskColorFor(n, state)} size={24} />
+                <NeighbourMask name={n} me={state} size={24} />
                 {n} <span className="tag">sample</span>
               </label>
             ))}

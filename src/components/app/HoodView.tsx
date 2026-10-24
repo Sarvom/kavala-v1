@@ -6,10 +6,9 @@ import { cellToLatLng, gridDisk } from "h3-js";
 import { cellPolygon } from "@/lib/geo/cells";
 import { SAMPLE_BOARD, SAMPLE_MEMBERS, SAMPLE_PLAYED_TODAY, type AppState } from "@/lib/app/state";
 import type { MapShape } from "@/components/HexMap";
-import { Mask, maskColorFor } from "./Mask";
+import { NeighbourMask } from "./Mask";
 
 const HexMap = dynamic(() => import("@/components/HexMap"), { ssr: false });
-const Neighbourhood3D = dynamic(() => import("./Neighbourhood3D"), { ssr: false });
 
 const AREA: Record<number, string> = { 6: "about 36 sq km", 7: "about 5 sq km", 8: "about 0.7 sq km", 9: "about 0.1 sq km" };
 
@@ -36,20 +35,13 @@ export default function HoodView({ state }: { state: AppState }) {
     <>
       <div>
         <p className="eyebrow">Neighbourhood</p>
-        <h1 className="flow-title">Your neighbourhood</h1>
+        <h1 className="flow-title">Your kavala</h1>
         <p className="muted">
           H3 resolution {hood.resolution}, {AREA[hood.resolution] ?? "a small area"}. It shrinks where homes are dense and grows where they
           are spread out, so it stays between 30 and 150 people.
         </p>
       </div>
-      <Neighbourhood3D
-        hoodCell={hood.cells[0]}
-        homeCell={state.homeCell}
-        height={300}
-        threads={Math.min(8, 2 + state.thanks)}
-        label="49 blocks, each an H3 hexagon. Taller blocks are busier; your block glows amber."
-      />
-      <HexMap center={center} zoom={13} shapes={shapes} fit height={280} />
+      <HexMap center={center} zoom={13} shapes={shapes} fit height={360} />
       <p className="muted">Only the outline is shown, never anyone&apos;s home. Maps &copy; OpenStreetMap contributors.</p>
       <div className="stats">
         <div className="stat"><b>{SAMPLE_MEMBERS}</b><span>Neighbours*</span></div>
@@ -62,7 +54,7 @@ export default function HoodView({ state }: { state: AppState }) {
           {board.map((r, i) => (
             <li key={r.name} className={r.me ? "me" : ""}>
               <span className="rank">{i + 1}</span>
-              <Mask color={maskColorFor(r.name, state)} size={26} />
+              <NeighbourMask name={r.name} me={state} size={26} />
               <span>{r.me ? `${r.name} (you)` : r.name}</span>
               <span className="pts">{r.points}</span>
             </li>

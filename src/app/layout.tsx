@@ -11,6 +11,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#0b1020",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -21,21 +22,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         {/* Loaded at runtime so builds don't need network access. */}
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bangers&display=swap" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bangers&family=Noto+Sans+Malayalam:wght@700&display=swap"
+        />
       </head>
-      <body>
-        <div className="shell">
-          <header className="topbar">
-            <a href="/" className="wordmark">Kavala</a>
-            <nav aria-label="Main">
-              <a href="/">App</a>
-              <a href="/engine">Engine</a>
-            </nav>
-          </header>
-          <main>{children}</main>
-          <footer className="foot">Your friendly neighbourhood · maps &copy; OpenStreetMap contributors</footer>
-        </div>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

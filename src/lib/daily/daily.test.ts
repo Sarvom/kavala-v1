@@ -44,3 +44,60 @@ describe("verifyCheckin", () => {
     expect(verifyCheckin(latLngToCell(place.lat + 0.01, place.lng, 11), place)).toBe(false);
   });
 });
+
+import { bearingDegrees, compassWord, warmth } from "./score";
+import { fetchPlaces, OVERPASS_ENDPOINTS } from "./fetchPlaces";
+
+describe("spot hints", () => {
+  it("points the right way", () => {
+    const here = { lat: 10, lng: 76 };
+    expect(compassWord(bearingDegrees(here, { lat: 10.01, lng: 76 }))).toBe("north");
+    expect(compassWord(bearingDegrees(here, { lat: 10, lng: 76.01 }))).toBe("east");
+    expect(compassWord(bearingDegrees(here, { lat: 9.99, lng: 75.99 }))).toBe("south-west");
+  });
+
+  it("grades distance as hot or cold", () => {
+    expect(warmth(80)).toBe("Found it");
+    expect(warmth(250)).toBe("Hot");
+    expect(warmth(600)).toBe("Warm");
+    expect(warmth(1200)).toBe("Cold");
+    expect(warmth(5000)).toBe("Freezing");
+  });
+});
+
+describe("fetchPlaces", () => {
+  const okJson = { elements: [{ type: "node", id: 1, lat: 10, lon: 76, tags: { amenity: "cafe", name: "Tea Point" } }] };
+
+  it("falls back to the next server when one fails", async () => {
+    const calls: string[] = [];
+    const fake = (async (url: string) => {
+      calls.push(url);
+      if (calls.length === 1) return new Response("busy", { status: 429 });
+      return new Response(JSON.stringify(okJson), { status: 200 });
+    }) as unknown as typeof fetch;
+    const r = await fetchPlaces(10, 76, 500, fake);
+    expect(r.places.map((p) => p.name)).toEqual(["Tea Point"]);
+    expect(r.endpoint).toBe(OVERPASS_ENDPOINTS[1]);
+    expect(r.errors[0]).toMatch(/429/);
+  });
+
+  it("reports every failure when all servers fail", async () => {
+    const fake = (async () => {
+      throw new TypeError("network");
+    }) as unknown as typeof fetch;
+    const r = await fetchPlaces(10, 76, 500, fake);
+    expect(r.places).toEqual([]);
+    expect(r.endpoint).toBeUndefined();
+    expect(r.errors).toHaveLength(OVERPASS_ENDPOINTS.length);
+  });
+
+  it("sends a plain form post from the browser, with no User-Agent", async () => {
+    let headers: Record<string, string> = {};
+    const fake = (async (_url: string, init: RequestInit) => {
+      headers = init.headers as Record<string, string>;
+      return new Response(JSON.stringify(okJson), { status: 200 });
+    }) as unknown as typeof fetch;
+    await fetchPlaces(10, 76, 500, fake, 1000, true);
+    expect(Object.keys(headers)).toEqual(["Content-Type"]);
+  });
+});

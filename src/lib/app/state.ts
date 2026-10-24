@@ -35,9 +35,14 @@ export interface Question {
 
 export interface SpotResult {
   place: SpotPlace;
+  /** Best (closest) guess, in metres. */
   distance: number;
   points: number;
   square: Square;
+  /** Distance of each guess in order, in metres. */
+  tries?: number[];
+  solved?: boolean;
+  timeMs?: number;
 }
 
 export interface DailyState {
@@ -47,6 +52,8 @@ export interface DailyState {
   /** When the user's own help answer was posted, for the sample asker's reply. */
   helpAnsweredAt?: number;
   step?: "done" | "checked-in" | "later";
+  /** How long each game took, for the result cards. */
+  times?: { help?: number; step?: number };
   done: boolean;
 }
 
@@ -73,29 +80,45 @@ export interface AppState {
   revealedTo: string[];
   /** Profile linked by signing in with Google. Others still see the mask. */
   account?: GoogleProfile;
+  /** Mask design; older saved states may not have one. */
+  maskStyle?: MaskStyle;
+}
+
+/** Original mask designs, several drawn from Kerala art forms. */
+export type MaskStyle = "classic" | "web" | "kathakali" | "pulikali" | "owl";
+export const MASK_STYLES: { id: MaskStyle; label: string }[] = [
+  { id: "classic", label: "Night watch" },
+  { id: "web", label: "Web weaver" },
+  { id: "kathakali", label: "Kathakali" },
+  { id: "pulikali", label: "Pulikali tiger" },
+  { id: "owl", label: "Night owl" },
+];
+
+export function maskStyleOf(state: Pick<AppState, "maskStyle">): MaskStyle {
+  return state.maskStyle ?? "classic";
 }
 
 export const MASK_COLORS = ["#1d6a4e", "#c58a12", "#3d6fa8", "#b4533a", "#7a5ba6", "#2e8c8c"];
 
 /** Sample neighbours shown in the demo. Clearly not real people. */
 export const SAMPLE_NEIGHBOURS: Record<string, string> = {
-  "Rainy Mango": "#b4533a",
-  "Early Kite": "#3d6fa8",
-  "Brave Auto": "#c58a12",
-  "Quiet Kettle": "#2e8c8c",
-  "Steady Banyan": "#7a5ba6",
-  "Kind Lantern": "#1d6a4e",
-  "Gentle Heron": "#b4533a",
-  "Curious Monsoon": "#3d6fa8",
-  "Morning Kite": "#2e8c8c",
+  "Wanda Warrier": "#b4533a",
+  "Bruce Varghese": "#3d6fa8",
+  "Tony Thomas": "#c58a12",
+  "Steve Sebastian": "#2e8c8c",
+  "Natasha Nair": "#7a5ba6",
+  "Carol Chacko": "#1d6a4e",
+  "Clint Kurian": "#b4533a",
+  "Stephen Sankar": "#3d6fa8",
+  "Scott Mathew": "#2e8c8c",
 };
 
 export const SAMPLE_BOARD = [
-  { name: "Brave Auto", points: 931 },
-  { name: "Kind Lantern", points: 874 },
-  { name: "Early Kite", points: 802 },
-  { name: "Rainy Mango", points: 655 },
-  { name: "Steady Banyan", points: 540 },
+  { name: "Tony Thomas", points: 931 },
+  { name: "Carol Chacko", points: 874 },
+  { name: "Bruce Varghese", points: 802 },
+  { name: "Wanda Warrier", points: 655 },
+  { name: "Natasha Nair", points: 540 },
 ];
 
 export const SAMPLE_PLAYED_TODAY = 38;
@@ -106,14 +129,27 @@ export const WIDEN_AFTER_MS = 20_000;
 /** Demo delay before a sample neighbour replies. */
 export const SAMPLE_REPLY_MS = 4_000;
 
-const ADJECTIVES = ["Quiet", "Early", "Rainy", "Kind", "Curious", "Steady", "Brave", "Gentle", "Sunny", "Patient"];
-const NOUNS = ["Heron", "Kettle", "Mango", "Lantern", "Kite", "Banyan", "Auto", "Monsoon", "Jackfruit", "Ferry"];
+/** Hero names: comic-inspired first names with Malayali family names. */
+export const HERO_NAMES = [
+  "Peter Bhaskaran",
+  "Miles Mohan",
+  "Gwen George",
+  "Kamala Kurup",
+  "Bucky Babu",
+  "Shuri Sasidharan",
+  "Logan Lonappan",
+  "Sam Suresh",
+  "Hope Haridas",
+  "Matt Menon",
+  "Jessica Joseph",
+  "Luke Lukose",
+  "Riri Raghavan",
+  "Danny Devassy",
+];
 
-export function randomMaskName(random: () => number = Math.random): string {
-  for (;;) {
-    const name = `${ADJECTIVES[Math.floor(random() * ADJECTIVES.length)]} ${NOUNS[Math.floor(random() * NOUNS.length)]}`;
-    if (!SAMPLE_NEIGHBOURS[name]) return name;
-  }
+export function randomMaskName(random: () => number = Math.random, current?: string): string {
+  const options = HERO_NAMES.filter((n) => !SAMPLE_NEIGHBOURS[n] && n !== current);
+  return options[Math.floor(random() * options.length)] ?? HERO_NAMES[0];
 }
 
 function sampleQuestions(now: number): Question[] {
@@ -121,7 +157,7 @@ function sampleQuestions(now: number): Question[] {
   return [
     {
       id: "sample-induction",
-      by: "Rainy Mango",
+      by: "Wanda Warrier",
       text: "My induction cooker stopped heating this morning. Anyone know a repair person who comes home?",
       category: "Repairs",
       askedAt: now - 2 * hour,
@@ -131,7 +167,7 @@ function sampleQuestions(now: number): Question[] {
       answers: [
         {
           id: "a1",
-          by: "Early Kite",
+          by: "Bruce Varghese",
           text: "The electronics shop near the bus stop repairs them, but you have to carry it there.",
           useful: false,
           sample: true,
@@ -140,7 +176,7 @@ function sampleQuestions(now: number): Question[] {
     },
     {
       id: "sample-puncture",
-      by: "Quiet Kettle",
+      by: "Steve Sebastian",
       text: "Puncture shop open now, anywhere close?",
       category: "Transport",
       askedAt: now - 14 * hour,
@@ -150,7 +186,7 @@ function sampleQuestions(now: number): Question[] {
       answers: [
         {
           id: "a2",
-          by: "Brave Auto",
+          by: "Tony Thomas",
           text: "The shop behind the mosque is open till 9:30. About ₹80 for a bike tyre.",
           useful: true,
           sample: true,
@@ -159,7 +195,7 @@ function sampleQuestions(now: number): Question[] {
     },
     {
       id: "sample-waste",
-      by: "Gentle Heron",
+      by: "Clint Kurian",
       text: "Which days does the waste collection come to our lane? Just moved in.",
       category: "Waste",
       askedAt: now - 20 * hour,
@@ -169,7 +205,7 @@ function sampleQuestions(now: number): Question[] {
       answers: [
         {
           id: "a3",
-          by: "Kind Lantern",
+          by: "Carol Chacko",
           text: "Tuesdays and Fridays, around 8 AM. They take plastic only if it's washed and dry.",
           useful: true,
           sample: true,
@@ -178,7 +214,7 @@ function sampleQuestions(now: number): Question[] {
     },
     {
       id: "sample-lunch",
-      by: "Curious Monsoon",
+      by: "Stephen Sankar",
       text: "Cheap and good lunch meals near the library?",
       category: "Food",
       askedAt: now - 30 * hour,
@@ -229,6 +265,18 @@ export function nextStreak(lastKey: string | undefined, todayKey: string, streak
   return 1;
 }
 
+/** Marks the daily complete (and moves the streak) once all three games are finished. */
+export function completeDaily(state: AppState): AppState {
+  const d = state.daily;
+  if (d.done || !d.spot || !d.help || !d.step) return state;
+  return {
+    ...state,
+    streak: nextStreak(state.lastPlayedKey, d.key, state.streak),
+    lastPlayedKey: d.key,
+    daily: { ...d, done: true },
+  };
+}
+
 /** Kavala Daily number, counted from the first daily on 25 October 2026. */
 export function dailyNumber(dailyKey: string): number {
   return Math.max(1, daysBetween("2026-10-25", dailyKey) + 1);
@@ -265,10 +313,10 @@ export function advance(state: AppState, now: number): { state: AppState; events
     }
     if (q.reach === "adjacent" && q.widenedAt && q.answers.length === 0 && now - q.widenedAt >= SAMPLE_REPLY_MS) {
       changed = true;
-      events.push({ message: "Steady Banyan (sample) from a neighbouring area answered." });
+      events.push({ message: "Natasha Nair (sample) from a neighbouring area answered." });
       const reply: Answer = {
         id: `reply-${q.id}`,
-        by: "Steady Banyan",
+        by: "Natasha Nair",
         text: SAMPLE_REPLIES[q.category] ?? SAMPLE_REPLIES.Other,
         useful: false,
         sample: true,
@@ -299,7 +347,7 @@ export function advance(state: AppState, now: number): { state: AppState; events
     });
     if (thanked) {
       thanks += 1;
-      events.push({ message: "Rainy Mango (sample) found your answer useful. +1 Thanks" });
+      events.push({ message: "Wanda Warrier (sample) found your answer useful. +1 Thanks" });
     }
     daily = { ...daily, helpAnsweredAt: undefined };
     changed = true;

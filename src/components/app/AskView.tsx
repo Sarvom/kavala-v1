@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SAMPLE_MEMBERS, type AppState, type Question } from "@/lib/app/state";
-import { Mask, maskColorFor } from "./Mask";
+import { NeighbourMask } from "./Mask";
 
 interface Props {
   state: AppState;
@@ -100,7 +100,7 @@ export default function AskView({ state, update, notify }: Props) {
         {state.questions.map((q) => (
           <article key={q.id} className="q">
             <div className="who">
-              <Mask color={maskColorFor(q.by, state)} size={24} />
+              <NeighbourMask name={q.by} me={state} size={24} />
               <strong>{q.mine ? "You" : q.by}</strong>
               {!q.mine && <span className="tag">sample</span>}
               <span>{timeAgo(q.askedAt)}</span>
@@ -111,7 +111,7 @@ export default function AskView({ state, update, notify }: Props) {
             {q.answers.map((a) => (
               <div key={a.id} className="answer">
                 <div className="who">
-                  <Mask color={maskColorFor(a.by, state)} size={22} />
+                  <NeighbourMask name={a.by} me={state} size={22} />
                   <strong>{a.by === state.maskName ? "You" : a.by}</strong>
                   {a.sample && <span className="tag">sample</span>}
                   {a.area && <span>from {a.area}</span>}

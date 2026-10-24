@@ -2,30 +2,34 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { dailyKey } from "@/lib/daily/score";
-import { advance, clearState, initialState, linkAccount, loadState, rollDay, saveState, type AppState } from "@/lib/app/state";
+import { advance, clearState, initialState, linkAccount, loadState, maskStyleOf, rollDay, saveState, type AppState } from "@/lib/app/state";
 import { useGoogleAccount } from "@/lib/app/useGoogleAccount";
-import JoinView from "./JoinView";
-import TodayView from "./TodayView";
+import Splash from "./Splash";
+import Onboarding from "./Onboarding";
+import GameHub from "./GameHub";
 import AskView from "./AskView";
 import HoodView from "./HoodView";
 import MeView from "./MeView";
+import { Mask } from "./Mask";
 
-type Tab = "today" | "ask" | "hood" | "me";
+type Tab = "play" | "ask" | "map" | "me";
 
 const TABS: { id: Tab; label: string; icon: React.JSX.Element }[] = [
-  { id: "today", label: "Today", icon: <path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z" /> },
+  { id: "play", label: "Play", icon: <><rect x="3" y="6" width="18" height="12" rx="4" /><path d="M8 10v4M6 12h4" /><circle cx="16" cy="11" r="1" /><circle cx="18" cy="13" r="1" /></> },
   { id: "ask", label: "Ask", icon: <><path d="M5 5h14v10H9l-4 4z" /><path d="M12 8.5v2.5" /><path d="M12 13h.01" /></> },
-  { id: "hood", label: "Neighbourhood", icon: <><polygon points="12,3 20,7.5 20,16.5 12,21 4,16.5 4,7.5" /><circle cx="12" cy="12" r="2.5" /></> },
+  { id: "map", label: "Map", icon: <><polygon points="12,3 20,7.5 20,16.5 12,21 4,16.5 4,7.5" /><circle cx="12" cy="12" r="2.5" /></> },
   { id: "me", label: "Me", icon: <><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></> },
 ];
 
 /**
- * The Kavala app experience. Progress is saved in this browser only; sample
- * neighbours stand in for real ones until accounts and the database arrive.
+ * Kavala: splash, onboarding (profile or mask), then the daily games hub.
+ * Progress is saved in this browser; sample neighbours stand in for real ones
+ * until accounts and the database arrive.
  */
 export default function KavalaApp() {
   const [state, setState] = useState<AppState | null>(null);
-  const [tab, setTab] = useState<Tab>("today");
+  const [entered, setEntered] = useState(false);
+  const [tab, setTab] = useState<Tab>("play");
   const [toast, setToast] = useState<string | null>(null);
   const stateRef = useRef<AppState | null>(null);
   const google = useGoogleAccount();
@@ -44,6 +48,8 @@ export default function KavalaApp() {
   useEffect(() => {
     const key = dailyKey();
     setState(rollDay(loadState() ?? initialState(key), key));
+    // Coming back from Google sign-in skips the splash.
+    if (window.location.search.includes("code=")) setEntered(true);
   }, []);
 
   useEffect(() => {
@@ -55,15 +61,13 @@ export default function KavalaApp() {
     const timer = setInterval(() => {
       const current = stateRef.current;
       if (!current) return;
-      const rolled = rollDay(current, dailyKey());
-      const { state: next, events } = advance(rolled, Date.now());
+      const { state: next, events } = advance(rollDay(current, dailyKey()), Date.now());
       if (next !== current) setState(next);
       if (events.length > 0) notify(events[events.length - 1].message);
     }, 2000);
     return () => clearInterval(timer);
   }, [notify]);
 
-  // Link or unlink the Google profile once both the saved state and the session are known.
   const loaded = state !== null;
   useEffect(() => {
     if (!loaded || !google.available || !google.ready) return;
@@ -72,36 +76,37 @@ export default function KavalaApp() {
 
   function reset() {
     clearState();
-    setTab("today");
+    setTab("play");
+    setEntered(false);
     setState(initialState(dailyKey()));
   }
 
-  if (!state) {
-    return (
-      <div className="app">
-        <p className="muted center">Loading your neighbourhood…</p>
-      </div>
-    );
+  if (!state) return <div className="game-app" />;
+
+  if (!entered) {
+    return <Splash returning={state.joined} name={state.maskName} onEnter={() => setEntered(true)} />;
   }
 
   return (
-    <div className="app">
+    <div className="game-app">
       {!state.joined ? (
-        <JoinView state={state} update={update} notify={notify} google={google} />
+        <Onboarding state={state} update={update} notify={notify} google={google} />
       ) : (
         <>
-          <div className="app-bar">
-            <span className="chip">{state.account ? `Signed in · ${state.maskName}` : `Masked · ${state.maskName}`}</span>
+          <header className="app-top">
+            <span className="app-logo">Kavala</span>
+            <span className="me-chip">
+              <Mask color={state.maskColor} style={maskStyleOf(state)} size={26} />
+              {state.maskName}
+            </span>
             <span className="chip gold">{state.thanks} Thanks</span>
-          </div>
-          <div className="app-body">
-            {tab === "today" && (
-              <TodayView state={state} update={update} notify={notify} goToAsk={() => setTab("ask")} goToMe={() => setTab("me")} googleAvailable={google.available} />
-            )}
+          </header>
+          <main className="app-main">
+            {tab === "play" && <GameHub state={state} update={update} notify={notify} />}
             {tab === "ask" && <AskView state={state} update={update} notify={notify} />}
-            {tab === "hood" && <HoodView state={state} />}
+            {tab === "map" && <HoodView state={state} />}
             {tab === "me" && <MeView state={state} update={update} notify={notify} onReset={reset} google={google} />}
-          </div>
+          </main>
           <nav className="tabs" aria-label="App sections">
             {TABS.map((t) => (
               <button key={t.id} className="tab" aria-current={tab === t.id ? "page" : undefined} onClick={() => setTab(t.id)}>
