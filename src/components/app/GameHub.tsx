@@ -4,10 +4,21 @@ import { useEffect, useState } from "react";
 import { dailyNumber, leaderboard, SAMPLE_PLAYED_TODAY, type AppState } from "@/lib/app/state";
 import { spotSquare } from "@/lib/daily/score";
 import { GameIcon, formatTime } from "./GameKit";
-import { GoodTurnGame, QuestGame, SpotGame, SQUARE_EMOJI, useDailyPlace } from "./Games";
+import { bonusFor, type BonusKind } from "@/lib/app/dailyContent";
+import { BONUS_GAMES, ChoiceGame, GoodTurnGame, QuestGame, SpotGame, SQUARE_EMOJI, useDailyPlace } from "./Games";
 import { NeighbourMask } from "./Mask";
 
-export type Game = "spot" | "help" | "quest";
+export type Game = "spot" | "help" | "quest" | BonusKind;
+
+const BONUS_KINDS: BonusKind[] = ["lingo", "quiz", "poll"];
+
+/** ✓ or ✗ for a played bonus game (a poll vote is always ✓), or null if not played. */
+function bonusMark(state: AppState, kind: BonusKind): string | null {
+  const result = state.daily.bonus?.[kind];
+  if (!result) return null;
+  const answer = bonusFor(kind, state.daily.key).answer;
+  return !answer || result.pick === answer ? "✓" : "✗";
+}
 
 interface Props {
   state: AppState;
@@ -43,6 +54,10 @@ export function shareText(state: AppState): string {
     `📍 Spot ${spotSquares(state)}${spot?.timeMs ? ` ${formatTime(spot.timeMs)}` : ""}`,
     `🤝 Good Turn ${d.help && d.help !== "skipped" ? "✓" : "–"}`,
     `🌱 Quest ${d.step === "done" || d.step === "checked-in" ? "✓" : "–"}`,
+    ...BONUS_KINDS.map((k) => {
+      const mark = bonusMark(state, k);
+      return mark ? `${BONUS_GAMES[k].emoji} ${BONUS_GAMES[k].name} ${mark}` : "";
+    }),
     state.streak > 1 ? `🔥 ${state.streak} day streak` : "",
     "Your friendly neighbourhood",
   ]
@@ -68,6 +83,7 @@ export default function GameHub({ state, update, notify, game, setGame }: Props)
   if (game === "spot") return <SpotGame state={state} update={update} onClose={close} load={placeLoad} retry={retryPlace} />;
   if (game === "help") return <GoodTurnGame state={state} update={update} onClose={close} />;
   if (game === "quest") return <QuestGame state={state} update={update} notify={notify} onClose={close} />;
+  if (game === "lingo" || game === "quiz" || game === "poll") return <ChoiceGame kind={game} state={state} update={update} onClose={close} />;
 
   const d = state.daily;
   const spot = d.spot && d.spot !== "skipped" ? d.spot : null;
@@ -164,6 +180,26 @@ export default function GameHub({ state, update, notify, game, setGame }: Props)
       </div>
       <p className="hub-played">{played} neighbours played today <span className="tag">sample</span></p>
 
+      <div className="bonus-head">
+        <span className="bonus-title">Bonus games</span>
+        <span className="muted">Just for fun. They don&apos;t affect your streak.</span>
+      </div>
+      <div className="tiles bonus">
+        {BONUS_KINDS.map((k) => {
+          const meta = BONUS_GAMES[k];
+          const mark = bonusMark(state, k);
+          return (
+            <button key={k} className={`tile ${mark ? "done" : ""}`} style={{ "--tile": meta.color } as React.CSSProperties} onClick={() => setGame(k)}>
+              <span className="tile-icon"><GameIcon kind={k} /></span>
+              <span className="tile-text">
+                <span className="tile-name">{meta.name}</span>
+                <span className="tile-tag">{mark ? `${mark} ${formatTime(d.bonus?.[k]?.timeMs ?? 0)}` : meta.tagline}</span>
+              </span>
+              <span className="tile-cta">{mark ? "View" : "Play"}</span>
+            </button>
+          );
+        })}
+      </div>
       <section className="board-card">
         <span className="board-title">Today&apos;s leaderboard <span className="tag">sample</span></span>
         <ol className="board">

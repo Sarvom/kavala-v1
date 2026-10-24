@@ -14,6 +14,21 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-25T04:03:27+05:30 — Bonus games in the Play tab
+
+- Changed: added three optional bonus games below Spot, Good Turn and Quest: Lingo (pick the meaning of a Malayalam word), Kochi Quiz (one Kochi fact) and Hood Poll (vote, then see the split). One shared `ChoiceGame` screen (`Games.tsx`), new tiles and share-card lines (`GameHub.tsx`), tile icons (`GameKit.tsx`), daily-rotating content and `bonusFor` (`dailyContent.ts`), `daily.bonus` in saved state (`state.ts`), styles (`globals.css`); README and SPEC updated.
+- Why: the Play tab had only three activities.
+- Design: bonus games don't count toward the daily being complete or the streak, so the core daily stays about two minutes.
+- Validation: `npm test` passed (70 tests, including new ones for daily rotation, valid quiz answers, poll shares adding to 100, and bonus play not completing the daily); `npm run typecheck` and `npm run build` passed; played Lingo, Kochi Quiz and Hood Poll in a local production build at phone size with Playwright, no page errors.
+- Limitations: Hood Poll percentages are labelled sample numbers, since votes are not stored on a server yet; quiz facts were written from general knowledge and checked by hand, not against a cited source in the app.
+
+## 2026-10-24T22:23:22+00:00 — Reorder bottom tabs
+
+- Changed: bottom tab order is now Play, Map, Ask, Me (was Play, Ask, Map, Me) in `src/components/app/KavalaApp.tsx`.
+- Why: requested by the team; Map sits next to Play.
+- Validation: `npm run typecheck` could not be run meaningfully here (dependencies are not installed in this container, so it reports missing modules); the change only swaps two array entries and the `Tab` union order.
+- Limitations: not checked on a real phone.
+
 ## 2026-10-25T02:35:29+05:30 — Demo polish for phones
 
 - Changed: games now open full screen (app header and tabs hide while playing) and results scroll into view (`KavalaApp.tsx`, `GameHub.tsx`, `Games.tsx`). Spot keeps its guesses and clock in saved state, so closing and reopening no longer resets the three tries, and past guesses show on the map (`state.ts`, `Games.tsx`). Good Turn and Quest rotate daily from a pool of sample questions and steps; Good Turn now offers 2 or 3 tips and reveals which tip sample neighbours trusted, and writing your own tip earns a Thanks from the asker (`src/lib/app/dailyContent.ts`, `state.ts`). The leaderboard changes by day. Toasts moved to the top so they no longer cover the main button. Best streak replaces the "Rest day a week" stat (`MeView.tsx`). Fonts are bundled through Fontsource instead of Google Fonts (`layout.tsx`, `package.json`). Added a web app manifest and icons for Add to Home screen (`src/app/manifest.ts`, `src/app/icon.svg`, `src/app/apple-icon.png`, `public/icon-192.png`, `public/icon-512.png`). Sharing uses the phone's share sheet when available. Light vibration on wins where supported. Spot reuses a neighbourhood's place list for up to a week when OpenStreetMap can't be reached, and loads the place while the hub is open. Google sign-in is offered only when Supabase's public settings report the Google provider is on (`useGoogleAccount.ts`).
