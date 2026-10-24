@@ -14,6 +14,14 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-25T04:03:27+05:30 — Bonus games in the Play tab
+
+- Changed: added three optional bonus games below Spot, Good Turn and Quest: Lingo (pick the meaning of a Malayalam word), Kochi Quiz (one Kochi fact) and Hood Poll (vote, then see the split). One shared `ChoiceGame` screen (`Games.tsx`), new tiles and share-card lines (`GameHub.tsx`), tile icons (`GameKit.tsx`), daily-rotating content and `bonusFor` (`dailyContent.ts`), `daily.bonus` in saved state (`state.ts`), styles (`globals.css`); README and SPEC updated.
+- Why: the Play tab had only three activities.
+- Design: bonus games don't count toward the daily being complete or the streak, so the core daily stays about two minutes.
+- Validation: `npm test` passed (70 tests, including new ones for daily rotation, valid quiz answers, poll shares adding to 100, and bonus play not completing the daily); `npm run typecheck` and `npm run build` passed; played Lingo, Kochi Quiz and Hood Poll in a local production build at phone size with Playwright, no page errors.
+- Limitations: Hood Poll percentages are labelled sample numbers, since votes are not stored on a server yet; quiz facts were written from general knowledge and checked by hand, not against a cited source in the app.
+
 ## 2026-10-24T22:23:22+00:00 — Reorder bottom tabs
 
 - Changed: bottom tab order is now Play, Map, Ask, Me (was Play, Ask, Map, Me) in `src/components/app/KavalaApp.tsx`.
