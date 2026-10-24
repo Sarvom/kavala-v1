@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import { cellToLatLng, gridDisk } from "h3-js";
 import { cellPolygon } from "@/lib/geo/cells";
-import { SAMPLE_BOARD, SAMPLE_MEMBERS, SAMPLE_PLAYED_TODAY, type AppState } from "@/lib/app/state";
+import { leaderboard, SAMPLE_MEMBERS, SAMPLE_PLAYED_TODAY, type AppState } from "@/lib/app/state";
 import type { MapShape } from "@/components/HexMap";
 import { NeighbourMask } from "./Mask";
 
@@ -27,9 +27,7 @@ export default function HoodView({ state }: { state: AppState }) {
 
   if (!hood) return null;
   const center = cellToLatLng(hood.cells[0]) as [number, number];
-  const board = [...SAMPLE_BOARD.map((r) => ({ ...r, me: false })), ...(state.daily.spot && state.daily.spot !== "skipped" ? [{ name: state.maskName, points: state.daily.spot.points, me: true }] : [])].sort(
-    (a, b) => b.points - a.points,
-  );
+  const board = leaderboard(state);
 
   return (
     <>
@@ -49,7 +47,7 @@ export default function HoodView({ state }: { state: AppState }) {
         <div className="stat"><b>{state.thanks}</b><span>Your Thanks</span></div>
       </div>
       <section className="card">
-        <h2>Today&apos;s leaderboard</h2>
+        <h2>Today&apos;s leaderboard <span className="tag">sample</span></h2>
         <ol className="board">
           {board.map((r, i) => (
             <li key={r.name} className={r.me ? "me" : ""}>

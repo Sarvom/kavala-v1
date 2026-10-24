@@ -27,8 +27,26 @@ export function profileFromUser(user: User | null): GoogleProfile | null {
 }
 
 /**
+ * Asks Supabase whether the Google provider is switched on. Returns null when
+ * the answer is unknown (offline, unexpected reply), so sign-in isn't blocked
+ * by a failed check.
+ */
+export async function googleProviderEnabled(url: string, anonKey: string, fetcher: typeof fetch = fetch): Promise<boolean | null> {
+  try {
+    const res = await fetcher(`${url.replace(/\/$/, "")}/auth/v1/settings`, { headers: { apikey: anonKey } });
+    if (!res.ok) return null;
+    const settings = (await res.json()) as { external?: Record<string, unknown> };
+    const google = settings.external?.google;
+    return typeof google === "boolean" ? google : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Google sign-in through Supabase Auth. `available` is false until the
- * Supabase keys are configured, so the UI can explain instead of failing.
+ * Supabase keys are configured and Google is switched on in Supabase, so the
+ * UI can explain instead of sending people to an error page.
  */
 export function useGoogleAccount() {
   const supabase = browserSupabase();
@@ -36,6 +54,20 @@ export function useGoogleAccount() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
+  const [providerOn, setProviderOn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabase || !url || !key) return;
+    let active = true;
+    googleProviderEnabled(url, key).then((on) => {
+      if (active) setProviderOn(on);
+    });
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -75,7 +107,7 @@ export function useGoogleAccount() {
     setProfile(null);
   }, [supabase]);
 
-  return { available: !!supabase, ready, profile, error, busy, signIn, signOut };
+  return { available: !!supabase && providerOn !== false, ready, profile, error, busy, signIn, signOut };
 }
 
 export type GoogleAccount = ReturnType<typeof useGoogleAccount>;

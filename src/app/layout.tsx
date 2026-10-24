@@ -1,10 +1,17 @@
 import type { Metadata, Viewport } from "next";
 import "leaflet/dist/leaflet.css";
+// Fonts ship with the app (no Google Fonts request): faster on weak data, and
+// the comic bursts always get the font they were drawn for.
+import "@fontsource/atkinson-hyperlegible/400.css";
+import "@fontsource/atkinson-hyperlegible/700.css";
+import "@fontsource/bangers/400.css";
+import "@fontsource/noto-sans-malayalam/malayalam-700.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Kavala",
   description: "Your friendly neighbourhood, trying to do better, one small step at a time.",
+  appleWebApp: { capable: true, title: "Kavala", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {
@@ -17,16 +24,6 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        {/* Loaded at runtime so builds don't need network access. */}
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bangers&family=Noto+Sans+Malayalam:wght@700&display=swap"
-        />
-      </head>
       <body>{children}</body>
     </html>
   );

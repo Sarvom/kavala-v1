@@ -10,9 +10,9 @@ export function spotPoints(distanceMetres: number, scaleMetres = 500): number {
   return Math.round(1000 * Math.exp(-distanceMetres / scaleMetres));
 }
 
-/** Result-card square for a Spot guess. */
+/** Result-card square for a Spot guess. Green means found (within the solve radius). */
 export function spotSquare(distanceMetres: number): Square {
-  if (distanceMetres <= 100) return "green";
+  if (distanceMetres <= SOLVE_RADIUS_M) return "green";
   if (distanceMetres <= 500) return "yellow";
   if (distanceMetres <= 2000) return "orange";
   return "grey";

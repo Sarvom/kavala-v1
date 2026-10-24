@@ -1,6 +1,7 @@
 import type { SpotPlace } from "../daily/spotPlace";
 import type { GoogleProfile } from "./useGoogleAccount";
 import type { Square } from "../daily/score";
+import { goodTurnFor, sampleBoard } from "./dailyContent";
 
 /**
  * Everything the app experience remembers, saved on the phone only. Neighbours,
@@ -41,16 +42,34 @@ export interface SpotResult {
   square: Square;
   /** Distance of each guess in order, in metres. */
   tries?: number[];
+  /** Where each guess was placed on the map (map taps, not the player's position). */
+  guesses?: { lat: number; lng: number }[];
   solved?: boolean;
   timeMs?: number;
+}
+
+export interface SpotGuess {
+  lat: number;
+  lng: number;
+  distance: number;
 }
 
 export interface DailyState {
   key: string;
   spot?: SpotResult | "skipped";
+  /** Guesses so far in today's Spot, kept so closing the game doesn't reset the tries. */
+  spotGuesses?: SpotGuess[];
+  /** When today's Spot was first opened, for its clock. */
+  spotStartedAt?: number;
   help?: "marked" | "answered" | "skipped";
-  /** When the user's own help answer was posted, for the sample asker's reply. */
+  /** Tip the player trusted, or "mine" when they wrote their own. */
+  helpPick?: string;
+  /** The player's own tip, when they wrote one. */
+  helpText?: string;
+  /** When the user's own tip was posted, for the sample asker's reply. */
   helpAnsweredAt?: number;
+  /** Set once the sample asker has thanked the player's tip. */
+  helpThanked?: boolean;
   step?: "done" | "checked-in" | "later";
   /** How long each game took, for the result cards. */
   times?: { help?: number; step?: number };
@@ -74,6 +93,8 @@ export interface AppState {
   level: TrustLevel;
   thanks: number;
   streak: number;
+  /** Longest streak so far; older saved states may not have one. */
+  bestStreak?: number;
   lastPlayedKey?: string;
   daily: DailyState;
   questions: Question[];
@@ -113,15 +134,22 @@ export const SAMPLE_NEIGHBOURS: Record<string, string> = {
   "Scott Mathew": "#2e8c8c",
 };
 
-export const SAMPLE_BOARD = [
-  { name: "Tony Thomas", points: 931 },
-  { name: "Carol Chacko", points: 874 },
-  { name: "Bruce Varghese", points: 802 },
-  { name: "Wanda Warrier", points: 655 },
-  { name: "Natasha Nair", points: 540 },
-];
-
 export const SAMPLE_PLAYED_TODAY = 38;
+
+export interface BoardRow {
+  name: string;
+  points: number;
+  me: boolean;
+}
+
+/** Today's leaderboard: the day's sample neighbours plus the player once they've played Spot. */
+export function leaderboard(state: AppState): BoardRow[] {
+  const spot = state.daily.spot && state.daily.spot !== "skipped" ? state.daily.spot : null;
+  return [
+    ...sampleBoard(state.daily.key).map((r) => ({ ...r, me: false })),
+    ...(spot ? [{ name: state.maskName, points: spot.points, me: true }] : []),
+  ].sort((a, b) => b.points - a.points);
+}
 export const SAMPLE_MEMBERS = 112;
 
 /** Demo wait before offering to ask neighbouring areas (the spec uses 60 s in demo mode). */
@@ -269,17 +297,22 @@ export function nextStreak(lastKey: string | undefined, todayKey: string, streak
 export function completeDaily(state: AppState): AppState {
   const d = state.daily;
   if (d.done || !d.spot || !d.help || !d.step) return state;
+  const streak = nextStreak(state.lastPlayedKey, d.key, state.streak);
   return {
     ...state,
-    streak: nextStreak(state.lastPlayedKey, d.key, state.streak),
+    streak,
+    bestStreak: Math.max(state.bestStreak ?? 0, streak),
     lastPlayedKey: d.key,
     daily: { ...d, done: true },
   };
 }
 
-/** Kavala Daily number, counted from the first daily on 25 October 2026. */
+/**
+ * Kavala Daily number, counted from the first daily (24 October 2026). A daily
+ * runs from 6 AM to 6 AM India time, so the night of 24-25 October is #1.
+ */
 export function dailyNumber(dailyKey: string): number {
-  return Math.max(1, daysBetween("2026-10-25", dailyKey) + 1);
+  return Math.max(1, daysBetween("2026-10-24", dailyKey) + 1);
 }
 
 export interface AppEvent {
@@ -297,8 +330,8 @@ const SAMPLE_REPLIES: Record<string, string> = {
 
 /**
  * Moves demo time forward: offers widening for unanswered questions, adds a
- * sample reply after widening, and lets the sample asker thank the user's
- * help answer. Pure, so it is easy to test.
+ * sample reply after widening, and lets today's Good Turn asker thank the
+ * user's tip. Pure, so it is easy to test.
  */
 export function advance(state: AppState, now: number): { state: AppState; events: AppEvent[] } {
   const events: AppEvent[] = [];
@@ -329,32 +362,15 @@ export function advance(state: AppState, now: number): { state: AppState; events
 
   let thanks = state.thanks;
   let daily = state.daily;
-  let finalQuestions = questions;
-  if (daily.helpAnsweredAt && now - daily.helpAnsweredAt >= SAMPLE_REPLY_MS) {
-    let thanked = false;
-    finalQuestions = questions.map((q) => {
-      if (q.id !== "sample-induction") return q;
-      return {
-        ...q,
-        answers: q.answers.map((a) => {
-          if (a.by === state.maskName && !a.useful) {
-            thanked = true;
-            return { ...a, useful: true };
-          }
-          return a;
-        }),
-      };
-    });
-    if (thanked) {
-      thanks += 1;
-      events.push({ message: "Wanda Warrier (sample) found your answer useful. +1 Thanks" });
-    }
-    daily = { ...daily, helpAnsweredAt: undefined };
+  if (daily.helpAnsweredAt && !daily.helpThanked && now - daily.helpAnsweredAt >= SAMPLE_REPLY_MS) {
+    thanks += 1;
+    daily = { ...daily, helpAnsweredAt: undefined, helpThanked: true };
+    events.push({ message: `${goodTurnFor(daily.key).asker} (sample) found your tip useful. +1 Thanks` });
     changed = true;
   }
 
   if (!changed) return { state, events };
-  return { state: { ...state, questions: finalQuestions, thanks, daily }, events };
+  return { state: { ...state, questions, thanks, daily }, events };
 }
 
 /**

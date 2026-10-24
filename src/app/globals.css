@@ -75,6 +75,7 @@ pre.mono { background: var(--surface-2); padding: 12px; border-radius: 10px; mar
 table { border-collapse: collapse; width: 100%; font-size: 14px; }
 th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
 .table-wrap { overflow-x: auto; }
+@media (max-width: 420px) { table { font-size: 13px; } th, td { padding: 6px 4px; } }
 
 .map { width: 100%; border-radius: 14px; overflow: hidden; border: 1.5px solid var(--line); box-shadow: var(--panel-shadow); }
 .map .leaflet-tile-pane { filter: brightness(0.78) saturate(0.75) contrast(1.05); }
@@ -146,7 +147,7 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; justify
 .flow-title { font-family: var(--display); font-weight: 400; font-size: 38px; letter-spacing: 0.04em; line-height: 1; margin: 0; }
 .clue { font-size: 17px; margin: 0; }
 .small-step { font-family: var(--display); font-size: 28px; letter-spacing: 0.03em; line-height: 1.05; margin: 0; }
-.spot-map { height: 340px; }
+.spot-map { height: clamp(240px, 46dvh, 440px); touch-action: none; }
 .spot-guess { stroke: #fff; fill: var(--leaf); fill-opacity: 1; }
 .spot-target { stroke: #fff; fill: var(--turmeric); fill-opacity: 1; }
 .spot-line { stroke: var(--ink); }
@@ -192,10 +193,12 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; justify
 .tab[aria-current="page"] { color: var(--turmeric); font-weight: 700; }
 .toast {
   position: fixed; left: 50%; transform: translateX(-50%);
-  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  top: calc(10px + env(safe-area-inset-top, 0px));
   width: min(420px, calc(100% - 32px)); z-index: 20;
-  background: var(--turmeric); color: var(--turmeric-ink); font-weight: 700; padding: 12px 16px; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  background: var(--turmeric); color: var(--turmeric-ink); font-weight: 700; padding: 12px 16px; border-radius: 14px;
+  border: 3px solid #050812; box-shadow: 5px 5px 0 #050812; animation: toast-in 0.25s ease-out both;
 }
+@keyframes toast-in { from { transform: translate(-50%, -16px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
 /* 3D scene and Google profile */
@@ -230,7 +233,7 @@ a.btn { text-decoration: none; text-align: center; display: inline-flex; justify
   box-shadow: 6px 6px 0 #050812; transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 .btn-hero:active { transform: translate(3px, 3px); box-shadow: 3px 3px 0 #050812; }
-.btn-hero[disabled] { opacity: 0.55; cursor: not-allowed; }
+.btn-hero[disabled] { background: var(--surface-2); color: var(--ink-2); border-color: var(--line); box-shadow: none; cursor: not-allowed; }
 .star { animation: twinkle 3.2s ease-in-out infinite; }
 .bulb { animation: twinkle 2.4s ease-in-out infinite; }
 .glow { animation: flicker 4s ease-in-out infinite; }
@@ -331,7 +334,7 @@ path.guess-pending { stroke: #0b1020; fill: #ffffff; fill-opacity: 0.85; }
 .guess-label { background: transparent; border: 0; box-shadow: none; color: #0b1020; font-weight: 800; font-size: 11px; padding: 0; }
 .guess-label::before { display: none; }
 .result { display: grid; gap: 12px; justify-items: center; text-align: center; }
-.burst { width: min(260px, 80%); height: auto; filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.25)); animation: pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.burst { width: min(210px, 62%); height: auto; filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.25)); animation: pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
 @keyframes pop { from { transform: scale(0.3) rotate(-12deg); opacity: 0; } to { transform: none; opacity: 1; } }
 .result-stats { display: grid; grid-auto-flow: column; gap: 10px; width: 100%; }
 .result-stats > div { display: grid; background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 10px; box-shadow: var(--panel-shadow); }
@@ -354,3 +357,22 @@ path.guess-pending { stroke: #0b1020; fill: #ffffff; fill-opacity: 0.85; }
 @media (prefers-reduced-motion: reduce) {
   .star, .bulb, .glow, .palm, .scarf, .logo, .splash-actions, .burst { animation: none !important; }
 }
+
+/* Polish pass: full-screen games, loading, Good Turn poll */
+.game-app.playing { padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+.hub-left { margin: 0; text-align: center; color: var(--ink-2); font-weight: 700; }
+.loading-card { grid-template-columns: auto 1fr; align-items: center; }
+.loading-card p { margin: 0; }
+.spinner { width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent, var(--turmeric)); animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.game-card details summary { cursor: pointer; }
+.answer-card.mine { cursor: default; border-color: var(--turmeric); width: 100%; }
+.poll { display: grid; gap: 8px; width: 100%; text-align: left; }
+.poll-row {
+  display: flex; justify-content: space-between; gap: 8px; padding: 10px 12px; border-radius: 12px; font-weight: 700;
+  border: 2px solid var(--line);
+  background: linear-gradient(90deg, rgba(255, 184, 51, 0.28) var(--pct), var(--surface) var(--pct));
+}
+.poll-row.mine { border-color: var(--turmeric); }
+.poll-pct { font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } .toast { animation: none; } }

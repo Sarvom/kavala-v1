@@ -13,6 +13,8 @@ import {
   type Question,
 } from "./state";
 import { overpassQuery, parseOverpass, pickDailyPlace, type SpotPlace } from "../daily/spotPlace";
+import { GOOD_TURNS, QUESTS, goodTurnFor, questFor, sampleBoard } from "./dailyContent";
+import { googleProviderEnabled } from "./useGoogleAccount";
 
 const NOW = 1_800_000_000_000;
 
@@ -41,9 +43,10 @@ describe("streaks", () => {
     expect(nextStreak("2026-10-25", "2026-10-25", 3)).toBe(3);
   });
 
-  it("numbers dailies from 25 October 2026", () => {
-    expect(dailyNumber("2026-10-25")).toBe(1);
-    expect(dailyNumber("2026-11-03")).toBe(10);
+  it("numbers dailies from 24 October 2026, one number per 6 AM day", () => {
+    expect(dailyNumber("2026-10-24")).toBe(1);
+    expect(dailyNumber("2026-10-25")).toBe(2);
+    expect(dailyNumber("2026-11-02")).toBe(10);
   });
 });
 
@@ -73,22 +76,19 @@ describe("advance", () => {
     expect(r.state.questions[0].answers[0].sample).toBe(true);
   });
 
-  it("thanks the user's help answer once, without changing the old state", () => {
+  it("thanks the user's own Good Turn tip once, without changing the old state", () => {
     const base = initialState("2026-10-25", NOW);
-    const withAnswer: AppState = {
+    const withTip: AppState = {
       ...base,
-      daily: { ...base.daily, help: "answered", helpAnsweredAt: NOW },
-      questions: base.questions.map((q) =>
-        q.id === "sample-induction"
-          ? { ...q, answers: [...q.answers, { id: "x", by: base.maskName, text: "Try the shop", useful: false, sample: false }] }
-          : q,
-      ),
+      daily: { ...base.daily, help: "answered", helpPick: "mine", helpText: "Try the shop", helpAnsweredAt: NOW },
     };
-    const r = advance(withAnswer, NOW + SAMPLE_REPLY_MS);
+    expect(advance(withTip, NOW + SAMPLE_REPLY_MS - 1).state).toBe(withTip);
+    const r = advance(withTip, NOW + SAMPLE_REPLY_MS);
     expect(r.state.thanks).toBe(1);
+    expect(r.state.daily.helpThanked).toBe(true);
     expect(r.state.daily.helpAnsweredAt).toBeUndefined();
-    const original = withAnswer.questions.find((q) => q.id === "sample-induction")!;
-    expect(original.answers.at(-1)!.useful).toBe(false);
+    expect(r.events[0].message).toContain(goodTurnFor("2026-10-25").asker);
+    expect(withTip.thanks).toBe(0);
     expect(advance(r.state, NOW + 10 * SAMPLE_REPLY_MS).state.thanks).toBe(1);
   });
 });
@@ -165,6 +165,70 @@ describe("completeDaily", () => {
     const done = completeDaily(full);
     expect(done.daily.done).toBe(true);
     expect(done.streak).toBe(1);
+    expect(done.bestStreak).toBe(1);
     expect(completeDaily(done)).toBe(done);
+  });
+
+  it("keeps the best streak when the current one restarts", async () => {
+    const { completeDaily } = await import("./state");
+    const base = initialState("2026-11-10", NOW);
+    const s: AppState = {
+      ...base,
+      streak: 6,
+      bestStreak: 6,
+      lastPlayedKey: "2026-11-01",
+      daily: { key: "2026-11-10", done: false, spot: "skipped", help: "marked", step: "done" },
+    };
+    const done = completeDaily(s);
+    expect(done.streak).toBe(1);
+    expect(done.bestStreak).toBe(6);
+  });
+});
+
+describe("daily content", () => {
+  it("gives everyone the same Good Turn and Quest on the same day", () => {
+    expect(goodTurnFor("2026-10-25")).toBe(goodTurnFor("2026-10-25"));
+    expect(questFor("2026-10-25")).toBe(questFor("2026-10-25"));
+  });
+
+  it("rotates through different content across a week", () => {
+    const days = Array.from({ length: 14 }, (_, i) => `2026-11-${String(i + 1).padStart(2, "0")}`);
+    expect(new Set(days.map((d) => goodTurnFor(d).id)).size).toBeGreaterThan(2);
+    expect(new Set(days.map((d) => questFor(d).id)).size).toBeGreaterThan(2);
+  });
+
+  it("has tips whose sample shares add up to 100 and unique ids", () => {
+    for (const turn of GOOD_TURNS) {
+      expect(turn.tips.reduce((sum, t) => sum + t.picked, 0)).toBe(100);
+      expect(new Set(turn.tips.map((t) => t.id)).size).toBe(turn.tips.length);
+    }
+    expect(new Set(GOOD_TURNS.map((t) => t.id)).size).toBe(GOOD_TURNS.length);
+    expect(new Set(QUESTS.map((q) => q.id)).size).toBe(QUESTS.length);
+  });
+
+  it("builds a sorted five-row sample leaderboard that changes by day", () => {
+    const a = sampleBoard("2026-10-25");
+    expect(a).toHaveLength(5);
+    expect(a.map((r) => r.points)).toEqual([...a.map((r) => r.points)].sort((x, y) => y - x));
+    expect(sampleBoard("2026-10-25")).toEqual(a);
+    expect(sampleBoard("2026-10-26")).not.toEqual(a);
+  });
+});
+
+describe("googleProviderEnabled", () => {
+  const reply = (status: number, body: unknown) => (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
+
+  it("reads whether Google is switched on in Supabase", async () => {
+    expect(await googleProviderEnabled("https://x.supabase.co", "k", reply(200, { external: { google: true } }))).toBe(true);
+    expect(await googleProviderEnabled("https://x.supabase.co/", "k", reply(200, { external: { google: false } }))).toBe(false);
+  });
+
+  it("returns unknown instead of blocking when the check fails", async () => {
+    expect(await googleProviderEnabled("https://x.supabase.co", "k", reply(500, {}))).toBeNull();
+    expect(await googleProviderEnabled("https://x.supabase.co", "k", reply(200, { nothing: 1 }))).toBeNull();
+    const broken = (async () => {
+      throw new Error("offline");
+    }) as unknown as typeof fetch;
+    expect(await googleProviderEnabled("https://x.supabase.co", "k", broken)).toBeNull();
   });
 });

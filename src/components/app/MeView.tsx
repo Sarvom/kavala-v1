@@ -81,8 +81,9 @@ export default function MeView({ state, update, notify, onReset, google }: Props
       <div className="stats">
         <div className="stat"><b>{state.thanks}</b><span>Thanks</span></div>
         <div className="stat"><b>{state.streak}</b><span>Day streak</span></div>
-        <div className="stat"><b>1</b><span>Rest day a week</span></div>
+        <div className="stat"><b>{Math.max(state.bestStreak ?? 0, state.streak)}</b><span>Best streak</span></div>
       </div>
+      <p className="muted center">Miss a day and your streak waits for you. Miss two and it starts again.</p>
 
       <section className="card">
         <h2>Trust ladder</h2>

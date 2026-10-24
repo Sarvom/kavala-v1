@@ -8,16 +8,19 @@ export function formatTime(ms: number): string {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
-/** Milliseconds since the game opened, frozen once `running` turns false. */
-export function useElapsed(running: boolean): number {
-  const start = useRef(Date.now());
+/**
+ * Milliseconds since the game started (or since it opened, when no start time
+ * is given), frozen once `running` turns false.
+ */
+export function useElapsed(running: boolean, startedAt?: number): number {
+  const opened = useRef(Date.now());
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     if (!running) return;
     const t = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(t);
   }, [running]);
-  return now - start.current;
+  return Math.max(0, now - (startedAt ?? opened.current));
 }
 
 /** The frame every game shares: close button, title and a running clock. */
@@ -50,6 +53,15 @@ export function GameFrame({
   );
 }
 
+/** A short vibration on phones that support it; silently does nothing elsewhere. */
+export function buzz(pattern: number | number[]): void {
+  try {
+    navigator.vibrate?.(pattern);
+  } catch {
+    // Vibration is optional.
+  }
+}
+
 /** A comic starburst with a word in it, for wins. */
 export function Burst({ word, color = "#ffb833" }: { word: string; color?: string }) {
   const points: string[] = [];
@@ -63,8 +75,9 @@ export function Burst({ word, color = "#ffb833" }: { word: string; color?: strin
     <svg className="burst" viewBox="0 0 240 210" role="img" aria-label={word}>
       <polygon points={points.join(" ")} fill="#050812" transform="translate(6 6)" />
       <polygon points={points.join(" ")} fill={color} stroke="#050812" strokeWidth="4" strokeLinejoin="round" />
+      {/* textLength keeps the word inside the burst whatever font the phone ends up using. */}
       <text x="120" y="118" textAnchor="middle" fontFamily="Bangers, Impact, sans-serif" fontSize="38" fill="#0b1020" letterSpacing="1"
-        {...(word.length > 8 ? { textLength: 150, lengthAdjust: "spacingAndGlyphs" } : {})}>
+        textLength={Math.min(136, word.length * 17)} lengthAdjust="spacingAndGlyphs">
         {word}
       </text>
     </svg>

@@ -1,17 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { dailyNumber, SAMPLE_BOARD, SAMPLE_PLAYED_TODAY, type AppState } from "@/lib/app/state";
+import { dailyNumber, leaderboard, SAMPLE_PLAYED_TODAY, type AppState } from "@/lib/app/state";
+import { spotSquare } from "@/lib/daily/score";
 import { GameIcon, formatTime } from "./GameKit";
-import { GoodTurnGame, QuestGame, SpotGame, SQUARE_EMOJI } from "./Games";
+import { GoodTurnGame, QuestGame, SpotGame, SQUARE_EMOJI, useDailyPlace } from "./Games";
 import { NeighbourMask } from "./Mask";
 
-type Game = "spot" | "help" | "quest";
+export type Game = "spot" | "help" | "quest";
 
 interface Props {
   state: AppState;
   update: (fn: (s: AppState) => AppState) => void;
   notify: (message: string) => void;
+  /** The open game, kept by the app so it can hide the header and tabs while playing. */
+  game: Game | null;
+  setGame: (game: Game | null) => void;
 }
 
 /** Milliseconds until the next daily, which starts at 6:00 AM India time (00:30 UTC). */
@@ -25,43 +29,58 @@ function countdown(ms: number): string {
   return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m`;
 }
 
-function shareText(state: AppState): string {
-  const d = state.daily;
-  const spot = d.spot && d.spot !== "skipped" ? d.spot : null;
-  const tries = spot?.tries?.map((t) => SQUARE_EMOJI[t <= 120 ? "green" : t <= 500 ? "yellow" : t <= 2000 ? "orange" : "grey"]).join("") ?? (spot ? SQUARE_EMOJI[spot.square] : "⬜");
-  return [
-    `Kavala #${dailyNumber(d.key)}`,
-    `📍 Spot ${tries}${spot?.timeMs ? ` ${formatTime(spot.timeMs)}` : ""}`,
-    `🤝 Good Turn ${d.help && d.help !== "skipped" ? "✓" : "–"}`,
-    `🌱 Quest ${d.step === "done" || d.step === "checked-in" ? "✓" : "–"}`,
-    "Your friendly neighbourhood",
-  ].join("\n");
+function spotSquares(state: AppState): string {
+  const spot = state.daily.spot && state.daily.spot !== "skipped" ? state.daily.spot : null;
+  if (!spot) return "–";
+  return (spot.tries ?? [spot.distance]).map((t) => SQUARE_EMOJI[spotSquare(t)]).join("");
 }
 
-export default function GameHub({ state, update, notify }: Props) {
-  const [open, setOpen] = useState<Game | null>(null);
+export function shareText(state: AppState): string {
+  const d = state.daily;
+  const spot = d.spot && d.spot !== "skipped" ? d.spot : null;
+  return [
+    `Kavala #${dailyNumber(d.key)}`,
+    `📍 Spot ${spotSquares(state)}${spot?.timeMs ? ` ${formatTime(spot.timeMs)}` : ""}`,
+    `🤝 Good Turn ${d.help && d.help !== "skipped" ? "✓" : "–"}`,
+    `🌱 Quest ${d.step === "done" || d.step === "checked-in" ? "✓" : "–"}`,
+    state.streak > 1 ? `🔥 ${state.streak} day streak` : "",
+    "Your friendly neighbourhood",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export default function GameHub({ state, update, notify, game, setGame }: Props) {
   const [now, setNow] = useState(Date.now());
+  const [canShare, setCanShare] = useState(false);
+  // Start loading today's Spot place as soon as the hub opens, so Spot opens instantly.
+  const [placeLoad, retryPlace] = useDailyPlace(state);
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30_000);
+    setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
     return () => clearInterval(t);
   }, []);
 
-  const close = () => setOpen(null);
-  if (open === "spot") return <SpotGame state={state} update={update} onClose={close} />;
-  if (open === "help") return <GoodTurnGame state={state} update={update} onClose={close} />;
-  if (open === "quest") return <QuestGame state={state} update={update} notify={notify} onClose={close} />;
+  const close = () => {
+    setGame(null);
+    window.scrollTo(0, 0);
+  };
+  if (game === "spot") return <SpotGame state={state} update={update} onClose={close} load={placeLoad} retry={retryPlace} />;
+  if (game === "help") return <GoodTurnGame state={state} update={update} onClose={close} />;
+  if (game === "quest") return <QuestGame state={state} update={update} notify={notify} onClose={close} />;
 
   const d = state.daily;
   const spot = d.spot && d.spot !== "skipped" ? d.spot : null;
   const played = SAMPLE_PLAYED_TODAY + (d.done ? 1 : 0);
+  const inProgress = !spot && d.spot !== "skipped" && (d.spotGuesses?.length ?? 0) > 0;
 
   const tiles: { id: Game; name: string; tagline: string; color: string; status: string | null }[] = [
     {
       id: "spot",
       name: "Spot",
-      tagline: "Find the place on the map",
+      tagline: inProgress ? `${3 - (d.spotGuesses?.length ?? 0)} guesses left` : "Find the place on the map",
       color: "#3ddc97",
-      status: d.spot === "skipped" ? "Skipped" : spot ? `${(spot.tries ?? [spot.distance]).map((t) => SQUARE_EMOJI[t <= 120 ? "green" : t <= 500 ? "yellow" : t <= 2000 ? "orange" : "grey"]).join("")}  ${formatTime(spot.timeMs ?? 0)}` : null,
+      status: d.spot === "skipped" ? "Skipped" : spot ? `${spotSquares(state)}  ${formatTime(spot.timeMs ?? 0)}` : null,
     },
     {
       id: "help",
@@ -75,18 +94,25 @@ export default function GameHub({ state, update, notify }: Props) {
       name: "Quest",
       tagline: "One small step outside",
       color: "#b28cff",
-      status: d.step ? (d.step === "later" ? "Saved for later" : `✓ ${d.step === "checked-in" ? "Checked in" : "Done"}`) : null,
+      status: d.step ? (d.step === "later" ? "Skipped today" : `✓ ${d.step === "checked-in" ? "Checked in" : "Done"}`) : null,
     },
   ];
 
-  const board = [
-    ...SAMPLE_BOARD.map((r) => ({ ...r, me: false })),
-    ...(spot ? [{ name: state.maskName, points: spot.points, me: true }] : []),
-  ].sort((a, b) => b.points - a.points);
+  const left = tiles.filter((t) => !t.status).length;
+  const board = leaderboard(state);
 
-  async function copy() {
+  async function share() {
+    const text = shareText(state);
+    if (canShare) {
+      try {
+        await navigator.share({ text });
+        return;
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+      }
+    }
     try {
-      await navigator.clipboard.writeText(shareText(state));
+      await navigator.clipboard.writeText(text);
       notify("Result copied");
     } catch {
       notify("Couldn't copy automatically.");
@@ -108,44 +134,44 @@ export default function GameHub({ state, update, notify }: Props) {
         </div>
       </header>
 
+      {d.done ? (
+        <section className="complete">
+          <span className="complete-word">Daily complete!</span>
+          <pre className="share-box">{shareText(state)}</pre>
+          <div className="two-col">
+            <button className="btn ghost" onClick={share}>{canShare ? "Share" : "Copy"}</button>
+            <a className="btn" href={`https://wa.me/?text=${encodeURIComponent(shareText(state))}`} target="_blank" rel="noopener noreferrer">
+              WhatsApp
+            </a>
+          </div>
+          <span className="muted">Next daily in {countdown(msUntilNextDaily(d.key, now))}</span>
+        </section>
+      ) : (
+        <p className="hub-left">{left === 3 ? "Three small games. About two minutes." : `${left} to go`}</p>
+      )}
+
       <div className="tiles">
         {tiles.map((t) => (
-          <button key={t.id} className={`tile ${t.status ? "done" : ""}`} style={{ "--tile": t.color } as React.CSSProperties} onClick={() => setOpen(t.id)}>
+          <button key={t.id} className={`tile ${t.status ? "done" : ""}`} style={{ "--tile": t.color } as React.CSSProperties} onClick={() => setGame(t.id)}>
             <span className="tile-icon"><GameIcon kind={t.id} /></span>
             <span className="tile-text">
               <span className="tile-name">{t.name}</span>
               <span className="tile-tag">{t.status ?? t.tagline}</span>
             </span>
-            <span className="tile-cta">{t.status ? "View" : "Play"}</span>
+            <span className="tile-cta">{t.status ? "View" : inProgress && t.id === "spot" ? "Resume" : "Play"}</span>
           </button>
         ))}
       </div>
       <p className="hub-played">{played} neighbours played today <span className="tag">sample</span></p>
 
-      {d.done && (
-        <section className="complete">
-          <span className="complete-word">Daily complete!</span>
-          <pre className="share-box">{shareText(state)}</pre>
-          <div className="two-col">
-            <button className="btn ghost" onClick={copy}>Copy</button>
-            <a className="btn" href={`https://wa.me/?text=${encodeURIComponent(shareText(state))}`} target="_blank" rel="noopener noreferrer">
-              Share on WhatsApp
-            </a>
-          </div>
-          <span className="muted">Next daily in {countdown(msUntilNextDaily(d.key, now))}</span>
-        </section>
-      )}
-
       <section className="board-card">
-        <span className="board-title">Neighbourhood leaderboard</span>
+        <span className="board-title">Today&apos;s leaderboard <span className="tag">sample</span></span>
         <ol className="board">
           {board.map((r, i) => (
             <li key={r.name} className={r.me ? "me" : ""}>
               <span className="rank">{i + 1}</span>
               <NeighbourMask name={r.name} me={state} size={28} />
-              <span>
-                {r.me ? `${r.name} (you)` : r.name}
-              </span>
+              <span>{r.me ? `${r.name} (you)` : r.name}</span>
               <span className="pts">{r.points}</span>
             </li>
           ))}

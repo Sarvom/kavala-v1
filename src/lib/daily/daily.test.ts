@@ -12,6 +12,8 @@ describe("spot scoring", () => {
 
   it("maps distances to result squares", () => {
     expect(spotSquare(80)).toBe("green");
+    expect(spotSquare(120)).toBe("green");
+    expect(spotSquare(121)).toBe("yellow");
     expect(spotSquare(300)).toBe("yellow");
     expect(spotSquare(1500)).toBe("orange");
     expect(spotSquare(5000)).toBe("grey");

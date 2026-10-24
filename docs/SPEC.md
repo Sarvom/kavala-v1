@@ -54,7 +54,7 @@ Honest limit: a browser cannot reliably detect fake-location apps. The speed che
 
 - One ritual per neighbourhood per day; the day starts at 6:00 AM IST (`dailyKey`).
 - Played like a daily puzzle: a hub with three game tiles, a clock in each game, a comic burst on a win, and a share card with coloured squares once all three are done.
-- **Spot:** find a named local place on the map in up to 3 tries. Within 120 m solves it; otherwise a hint gives warmth (Hot to 300 m, Warm to 700 m, Cold to 1.5 km, then Freezing), the distance and a compass direction. Score uses the closest try. Points `round(1000 * exp(-d / 500))`, d in metres. Squares: green to 100 m, yellow to 500 m, orange to 2 km, grey beyond.
+- **Spot:** find a named local place on the map in up to 3 tries. Within 120 m solves it; otherwise a hint gives warmth (Hot to 300 m, Warm to 700 m, Cold to 1.5 km, then Freezing), the distance and a compass direction. Score uses the closest try. Points `round(1000 * exp(-d / 500))`, d in metres. Squares: green when found (to 120 m), yellow to 500 m, orange to 2 km, grey beyond.
 - **Good Turn:** a neighbour's question in a speech bubble; mark the answer you'd trust or write a better one.
 - **Quest:** a small real-world action (say hi to the newest neighbour, or visit today's Spot place). A check-in at a place is accepted only when the phone's cell is the place's cell or touches it (`verifyCheckin`).
 - Then a result card and "See you tomorrow". Nothing more to scroll.

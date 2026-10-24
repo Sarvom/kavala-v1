@@ -6,7 +6,7 @@ import { advance, clearState, initialState, linkAccount, loadState, maskStyleOf,
 import { useGoogleAccount } from "@/lib/app/useGoogleAccount";
 import Splash from "./Splash";
 import Onboarding from "./Onboarding";
-import GameHub from "./GameHub";
+import GameHub, { type Game } from "./GameHub";
 import AskView from "./AskView";
 import HoodView from "./HoodView";
 import MeView from "./MeView";
@@ -30,6 +30,7 @@ export default function KavalaApp() {
   const [state, setState] = useState<AppState | null>(null);
   const [entered, setEntered] = useState(false);
   const [tab, setTab] = useState<Tab>("play");
+  const [game, setGame] = useState<Game | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const stateRef = useRef<AppState | null>(null);
   const google = useGoogleAccount();
@@ -77,6 +78,7 @@ export default function KavalaApp() {
   function reset() {
     clearState();
     setTab("play");
+    setGame(null);
     setEntered(false);
     setState(initialState(dailyKey()));
   }
@@ -87,34 +89,48 @@ export default function KavalaApp() {
     return <Splash returning={state.joined} name={state.maskName} onEnter={() => setEntered(true)} />;
   }
 
+  const playing = state.joined && tab === "play" && game !== null;
+
   return (
-    <div className="game-app">
+    <div className={`game-app ${playing ? "playing" : ""}`}>
       {!state.joined ? (
         <Onboarding state={state} update={update} notify={notify} google={google} />
       ) : (
         <>
-          <header className="app-top">
-            <span className="app-logo">Kavala</span>
-            <span className="me-chip">
-              <Mask color={state.maskColor} style={maskStyleOf(state)} size={26} />
-              {state.maskName}
-            </span>
-            <span className="chip gold">{state.thanks} Thanks</span>
-          </header>
+          {!playing && (
+            <header className="app-top">
+              <span className="app-logo">Kavala</span>
+              <span className="me-chip">
+                <Mask color={state.maskColor} style={maskStyleOf(state)} size={26} />
+                {state.maskName}
+              </span>
+              <span className="chip gold">{state.thanks} Thanks</span>
+            </header>
+          )}
           <main className="app-main">
-            {tab === "play" && <GameHub state={state} update={update} notify={notify} />}
+            {tab === "play" && <GameHub state={state} update={update} notify={notify} game={game} setGame={setGame} />}
             {tab === "ask" && <AskView state={state} update={update} notify={notify} />}
             {tab === "map" && <HoodView state={state} />}
             {tab === "me" && <MeView state={state} update={update} notify={notify} onReset={reset} google={google} />}
           </main>
-          <nav className="tabs" aria-label="App sections">
-            {TABS.map((t) => (
-              <button key={t.id} className="tab" aria-current={tab === t.id ? "page" : undefined} onClick={() => setTab(t.id)}>
-                <svg viewBox="0 0 24 24" aria-hidden="true">{t.icon}</svg>
-                {t.label}
-              </button>
-            ))}
-          </nav>
+          {!playing && (
+            <nav className="tabs" aria-label="App sections">
+              {TABS.map((t) => (
+                <button
+                  key={t.id}
+                  className="tab"
+                  aria-current={tab === t.id ? "page" : undefined}
+                  onClick={() => {
+                    setTab(t.id);
+                    window.scrollTo(0, 0);
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">{t.icon}</svg>
+                  {t.label}
+                </button>
+              ))}
+            </nav>
+          )}
         </>
       )}
       {toast && (

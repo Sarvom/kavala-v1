@@ -7,7 +7,7 @@ export default function GoogleButton({ google, label = "Continue with Google" }:
   if (!google.available) {
     return (
       <p className="muted">
-        Google sign-in turns on once the Supabase keys are added to the deployment. Setup steps are in the README.
+        Google sign-in turns on once Supabase is connected and Google is switched on in it. Setup steps are in the README.
       </p>
     );
   }
