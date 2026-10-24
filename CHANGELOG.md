@@ -14,6 +14,14 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
+## 2026-10-25T01:27:59+05:30 — App experience with a sample daily
+
+- Changed: `/` is now the app experience (`src/components/app/`: KavalaApp, JoinView, TodayView, AskView, HoodView, MeView, Mask, SpotMap); the engine overview moved to `/engine`; added `src/lib/app/state.ts` (app state, sample content, streaks, demo timing) and `src/lib/daily/spotPlace.ts` (OpenStreetMap places via Overpass, deterministic daily pick); app styles in `globals.css`; README and SPEC updated.
+- What it does: join with real location (hexagon only) or a demo Kochi location, choose a mask; Kavala Daily with Spot on a real nearby OpenStreetMap place, Help on a sample question, Small step with a location-verified check-in; result card with copy and WhatsApp share; Ask with a daily limit and widening to neighbouring areas; Thanks; neighbourhood map; trust ladder with demo verification and reveal controls.
+- Why: show the full user experience on the deployed link, built on the tested engine.
+- Validation: `npm test` passed (51 tests in 5 files, including new tests for streaks, day rollover, demo timing and Spot place picking); `npm run typecheck` passed; `npm run build` passed; local server returned 200 for `/`, `/engine` and the three debug pages.
+- Limitations: sample neighbours, questions and counts are demo content and labelled as such; progress is saved only in the browser; Overpass requests were not exercised from this build environment and depend on the public service; not yet tested on a real phone.
+
 ## 2026-10-25T00:31:07+05:30 — Base version: location engine, neighbourhoods, handshake
 
 - Changed: added the Next.js app (`package.json`, `tsconfig.json`, `next.config.mjs`, `vitest.config.mts`, `.env.example`, `src/`, `scripts/synthetic.ts`), the database schema (`supabase/migrations/0001_init.sql`), the specification (`docs/SPEC.md`) and the project README.

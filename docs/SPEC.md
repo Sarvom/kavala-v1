@@ -58,6 +58,8 @@ Honest limit: a browser cannot reliably detect fake-location apps. The speed che
 - **Small step:** a small real-world action. A check-in at a place is accepted only when the phone's cell is the place's cell or touches it (`verifyCheckin`).
 - Then a result card and "See you tomorrow". Nothing more to scroll.
 
+Spot places (implemented: `src/lib/daily/spotPlace.ts`): named public places (cafes, libraries, places of worship, bakeries and similar) fetched from OpenStreetMap through the Overpass API around the neighbourhood's centre, then picked by a hash of the neighbourhood ID and daily key, so the whole neighbourhood gets the same place. The Spot map is capped at zoom 16 so place names aren't printed on the tiles.
+
 ## Trust levels and Thanks
 
 | Action | Masked | Verified | Vouched | Watch |
@@ -86,7 +88,8 @@ Next.js 14 (App Router) and TypeScript, plain CSS with theme tokens, Supabase (P
 | Location engine, beacon API, debug page | Done in base version |
 | Neighbourhood rebalance, assignment, synthetic data, debug map | Done in base version |
 | Handshake signing and verification, APIs, debug page | Done in base version |
-| Daily scoring, day boundary, check-in rule | Done (logic only) |
+| Daily scoring, day boundary, check-in rule | Done |
+| App experience at `/`: join, Kavala Daily (Spot on real OpenStreetMap places, Help, Small step with verified check-in), result card, Ask with widening, Thanks, neighbourhood map, trust ladder | Done with sample neighbours; progress saved in the browser |
 | Database connection, accounts, join flow | Next (Phase 2) |
 | Real QR scanning, vouches table, live room | Next (Phase 4) |
-| Daily, Ask and Thanks screens on the database | Next (Phase 5) |
+| Daily, Ask and Thanks saved in the database with real neighbours | Next (Phase 5) |

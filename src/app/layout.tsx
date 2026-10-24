@@ -21,9 +21,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header className="topbar">
             <a href="/" className="wordmark">Kavala</a>
             <nav aria-label="Main">
-              <a href="/debug/location">Location</a>
-              <a href="/debug/hoods">Neighbourhoods</a>
-              <a href="/debug/handshake">Handshake</a>
+              <a href="/">App</a>
+              <a href="/engine">Engine</a>
             </nav>
           </header>
           <main>{children}</main>

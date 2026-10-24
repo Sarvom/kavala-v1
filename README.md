@@ -103,14 +103,16 @@ Phones only share GPS with pages served over HTTPS (or localhost), so test the l
 
 | Page | What it shows |
 | --- | --- |
+| `/` | The app experience: join with your location and a mask, Kavala Daily (Spot on a real OpenStreetMap place, Help, Small step with a location-verified check-in), the result card, Ask with widening, your neighbourhood map, and the trust ladder. Sample neighbours stand in for real ones; progress is saved in your browser only |
+| `/engine` | Overview of the engine pages below |
 | `/debug/location` | Live GPS accuracy, the chosen hexagon level, your cells on an OpenStreetMap map, and the exact request sent to the server |
 | `/debug/hoods` | Synthetic residents grouped into neighbourhoods; small hexagons in the dense centre, large ones at the edges |
 | `/debug/handshake` | Signed codes that expire in 30 seconds, work once and fail when the phones are far apart |
 
 ### Current status
 
-- **Working features:** location engine with accuracy gate, speed check, smoothing and adaptive resolution; beacon API that refuses coordinates; neighbourhood rebalancing with split and pooling; neighbourhood assignment; handshake signing and verification with APIs; daily scoring, 6 AM day boundary and check-in rule; database schema with row-level security.
-- **Known limitations:** no accounts or saved data yet (the database is not connected); handshake nonces are kept in memory, so they reset on restart and are not shared between server instances; the handshake page simulates phone positions; the daily game, Ask and Thanks screens are not built yet; a pooled neighbourhood can exceed 150 by up to 30 people.
-- **Libraries, APIs and data:** [Next.js](https://nextjs.org), [h3-js](https://github.com/uber/h3-js) (Uber H3, Apache 2.0), [Leaflet](https://leafletjs.com) (BSD 2-Clause), map tiles and data [© OpenStreetMap contributors](https://www.openstreetmap.org/copyright) (ODbL), [Supabase JS](https://github.com/supabase/supabase-js), [Vitest](https://vitest.dev). Synthetic residents are generated locally and are not real people.
+- **Working features:** app experience at `/` (join, Kavala Daily with real OpenStreetMap places, verified check-in, result card and WhatsApp share, Ask with widening, Thanks, neighbourhood map, trust ladder, reveal controls); location engine with accuracy gate, speed check, smoothing and adaptive resolution; beacon API that refuses coordinates; neighbourhood rebalancing with split and pooling; neighbourhood assignment; handshake signing and verification with APIs; daily scoring, 6 AM day boundary and check-in rule; database schema with row-level security.
+- **Known limitations:** no accounts or saved data on a server yet (the database is not connected), so the app keeps progress in the browser and uses clearly labelled sample neighbours, questions and counts; Spot places come from the public Overpass API, which can be slow or unavailable (Spot then offers retry or skip); handshake nonces are kept in memory, so they reset on restart and are not shared between server instances; the handshake page simulates phone positions; the daily game, Ask and Thanks screens are not built yet; a pooled neighbourhood can exceed 150 by up to 30 people.
+- **Libraries, APIs and data:** [Next.js](https://nextjs.org), [h3-js](https://github.com/uber/h3-js) (Uber H3, Apache 2.0), [Leaflet](https://leafletjs.com) (BSD 2-Clause), map tiles and data [© OpenStreetMap contributors](https://www.openstreetmap.org/copyright) (ODbL), Spot places from the [Overpass API](https://overpass-api.de), [Supabase JS](https://github.com/supabase/supabase-js), [Vitest](https://vitest.dev). Synthetic residents are generated locally and are not real people.
 
 See [AI_USAGE.md](AI_USAGE.md) for AI assistance and [CHANGELOG.md](CHANGELOG.md) for the development record.
