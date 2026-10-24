@@ -1,0 +1,102 @@
+/* Kavala base styles. Colours are tokens so light and dark both work. */
+:root {
+  --bg: #e9efea;
+  --surface: #ffffff;
+  --surface-2: #dfe7e1;
+  --ink: #14221c;
+  --ink-2: #4b5d55;
+  --line: #c6d2ca;
+  --leaf: #1d6a4e;
+  --leaf-ink: #ffffff;
+  --turmeric: #e0a526;
+  --turmeric-ink: #2a1d00;
+  --good: #2f8a57;
+  --bad: #b8422e;
+  --r6: #3d6fa8;
+  --r7: #2e8c8c;
+  --r8: #1d6a4e;
+  --r9: #c58a12;
+  font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1411;
+    --surface: #151f1a;
+    --surface-2: #1d2a23;
+    --ink: #e4ede8;
+    --ink-2: #9cb0a6;
+    --line: #2b3a32;
+    --leaf: #55b98f;
+    --leaf-ink: #04130c;
+    --turmeric: #f2bd48;
+    --turmeric-ink: #241900;
+    --good: #46a872;
+    --bad: #e06a52;
+    --r6: #6f9bd1;
+    --r7: #4fb3b3;
+    --r8: #55b98f;
+    --r9: #e6b437;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+a { color: var(--leaf); }
+button { font: inherit; }
+:focus-visible { outline: 3px solid var(--turmeric); outline-offset: 2px; }
+
+.shell { max-width: 880px; margin: 0 auto; padding-block: 12px 32px; display: grid; gap: 20px; }
+.topbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.topbar nav { display: flex; gap: 14px; flex-wrap: wrap; }
+.topbar nav a { color: var(--ink-2); text-decoration: none; font-size: 15px; }
+.topbar nav a:hover { color: var(--ink); }
+.wordmark { font-weight: 800; font-size: 24px; letter-spacing: -0.02em; color: var(--ink); text-decoration: none; margin-right: auto; }
+main { display: grid; gap: 20px; min-width: 0; }
+.foot { font-size: 13px; color: var(--ink-2); }
+
+h1 { font-size: clamp(28px, 6vw, 40px); line-height: 1.1; margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
+h2 { font-size: 20px; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.lede { font-size: 18px; color: var(--ink-2); max-width: 62ch; }
+.muted { color: var(--ink-2); font-size: 14px; }
+.eyebrow { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.stat { display: grid; gap: 2px; }
+.stat b { font-size: 22px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 13px; color: var(--ink-2); }
+.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; word-break: break-all; }
+pre.mono { background: var(--surface-2); padding: 12px; border-radius: 10px; margin: 0; white-space: pre-wrap; overflow-x: auto; }
+
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.btn { border: 0; border-radius: 12px; padding: 10px 16px; background: var(--leaf); color: var(--leaf-ink); font-weight: 700; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+.pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+.pill.ok { background: var(--good); color: #fff; }
+.pill.no { background: var(--bad); color: #fff; }
+.pill.wait { background: var(--surface-2); color: var(--ink-2); }
+
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; }
+
+.map { width: 100%; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+/* Leaflet paths take their colours from these classes. */
+.hex-fine { stroke: var(--leaf); fill: var(--leaf); fill-opacity: 0.25; }
+.hex-home { stroke: var(--turmeric); fill: var(--turmeric); fill-opacity: 0.08; stroke-dasharray: 4 4; }
+.hex-r6 { stroke: var(--r6); fill: var(--r6); fill-opacity: 0.18; }
+.hex-r7 { stroke: var(--r7); fill: var(--r7); fill-opacity: 0.22; }
+.hex-r8 { stroke: var(--r8); fill: var(--r8); fill-opacity: 0.26; }
+.hex-r9 { stroke: var(--r9); fill: var(--r9); fill-opacity: 0.3; }
+.map-dot { stroke: #fff; fill: var(--bad); fill-opacity: 1; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }

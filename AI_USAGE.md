@@ -4,11 +4,11 @@ If maintaining this record, briefly document the actual contributions of whichev
 
 ## Event build log
 
-No participant AI usage has been recorded yet. Replace the placeholder row as you build. Mark human review as pending until someone has reviewed the contribution.
+Mark human review as pending until someone has reviewed the contribution.
 
 | Date and time with timezone | Tool / model, if known | Task | Assistance and affected files | Human review / corrections | Validation and result |
 | --- | --- | --- | --- | --- | --- |
-| TODO | Tool / model used, if any | TODO | TODO | Pending | TODO |
+| 2026-10-25T00:31:07+05:30 | Claude (Anthropic), Claude Opus 5.5 | Product brainstorm, specification and base version | Wrote all application code, tests, schema and docs in this commit: `src/`, `scripts/`, `supabase/`, `docs/SPEC.md`, `README.md`, config files | Pending review by Govindaraman S | 41 unit tests, type check and production build passed; local API smoke tests passed; not yet tested on a real phone |
 
 ## Template preparation
 

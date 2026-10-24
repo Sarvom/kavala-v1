@@ -14,16 +14,14 @@ Record each meaningful project change during the event, newest first. Update thi
 
 ## Event build log
 
-No project implementation has been recorded yet. Replace this sentence with entries as you build:
+## 2026-10-25T00:31:07+05:30 — Base version: location engine, neighbourhoods, handshake
 
-```text
-## <actual timestamp> — <short change title>
+- Changed: added the Next.js app (`package.json`, `tsconfig.json`, `next.config.mjs`, `vitest.config.mts`, `.env.example`, `src/`, `scripts/synthetic.ts`), the database schema (`supabase/migrations/0001_init.sql`), the specification (`docs/SPEC.md`) and the project README.
+- What it does: on-device location filtering, smoothing and adaptive H3 resolution; a beacon API that refuses raw coordinates; neighbourhood rebalancing (split above 150, pool below 30) and assignment; HMAC-signed handshake codes with 30-second expiry, single use and same-place checks; daily scoring, 6 AM IST day boundary and check-in rule; debug pages for location, neighbourhoods and handshakes with OpenStreetMap maps.
+- Why: build the technically deep core first, so later phases add accounts and screens on top of tested logic.
+- Validation: `npm test` passed (41 tests in 4 files); `npm run typecheck` passed; `npm run build` passed; local smoke test of `/api/beacon` (valid beacon accepted with stored false; request with lat/lng refused) and of the handshake APIs with a secret set (valid code accepted, replay refused as reused, distant cell refused as too far); all four pages returned 200.
+- Limitations: database not connected yet, so nothing is stored; handshake nonces live in memory; handshake page simulates positions; GPS behaviour on real phones not yet tested (needs the HTTPS deployment); daily, Ask and Thanks screens not built.
 
-- Changed: <feature or files changed>
-- Why: <reason for the change>
-- Validation: <commands or manual checks actually run, with results>
-- Limitations: <known issues or "None identified in these checks">
-```
 
 ## Template setup — 10 October 2026
 
